@@ -14,6 +14,7 @@ Pick your settings in tabs (installation, user account, privacy, performance, po
 - **Theme, Taskbar, Start menu, File Explorer:** tweaks comparable to Winhance's *Customize* categories.
 - **Windows apps:** remove built-in Appx packages, optional Windows capabilities and features, and OneDrive.
 - **Software (winget):** install packages on first logon from a list of winget IDs (import a `winget-apps.json` produced by `winget export`).
+- **Languages:** English (default) and Portuguese, selectable from a menu. More languages can be added by extending the translation dictionary in `generator.html`.
 - **Presets, import/export:** *Recommended* and *Gaming* presets; save and load your configuration as JSON.
 - **XML preview and validation** with warnings for risky choices, plus a view of the embedded scripts.
 
@@ -21,11 +22,11 @@ Pick your settings in tabs (installation, user account, privacy, performance, po
 
 1. Open the generator page (`generator.html` on the GitHub Pages site of this repository, or open the file locally in any modern browser).
 2. Go through the tabs and choose your options.
-3. Open **Gerar XML** (Generate XML), check the warnings, then click **Descarregar autounattend.xml** (Download).
+3. Open **Generate XML**, check the warnings, then click **Download autounattend.xml**.
 4. Place `autounattend.xml` in the root of your Windows installation USB drive (next to `setup.exe`), or inject it into your ISO.
 5. Boot from the USB drive and install Windows.
 
-> The interface is currently in Portuguese (pt-PT).
+> The interface is in English by default. Use the language menu in the top bar to switch to Portuguese (pt-PT). The choice is remembered, and you can also link directly with `?lang=pt`.
 
 ## How it works
 

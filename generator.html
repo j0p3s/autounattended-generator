@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="pt-PT">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -19,6 +19,7 @@ h1 code{font-size:1.2rem}
 .sub{margin:0 0 12px;color:var(--mut)}
 .bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .sp{flex:1}
+.bar select{width:auto;padding:7px 9px}
 button{font:inherit;cursor:pointer;border:1px solid var(--bd);background:var(--card);color:var(--tx);border-radius:8px;padding:7px 12px}
 button:hover{background:var(--hov)}
 button.pri{background:var(--ac);color:var(--acx);border-color:var(--ac);font-weight:600}
@@ -63,13 +64,14 @@ footer p{margin:4px 0}
 </head>
 <body>
 <header><div class="wrap">
-  <h1>Gerador de <code>autounattend.xml</code></h1>
-  <p class="sub">Configure o Windows 10/11 por separadores (instalação, conta, privacidade, performance, tema, apps…) com opções inspiradas no Winhance. Tudo corre no browser; nada é enviado para lado nenhum.</p>
+  <h1 id="h1">Gerador de <code>autounattend.xml</code></h1>
+  <p class="sub" id="sub">Configure o Windows 10/11 por separadores (instalação, conta, privacidade, performance, tema, apps…) com opções inspiradas no Winhance. Tudo corre no browser; nada é enviado para lado nenhum.</p>
   <div class="bar">
     <button id="b-rec" title="Aplica uma seleção equilibrada de otimizações">Recomendado</button>
     <button id="b-gam" title="Foco em desempenho e jogos">Gaming</button>
     <button id="b-min" title="Desmarca todos os tweaks">Limpar tweaks</button>
     <span class="sp"></span>
+    <select id="lang" aria-label="Language" title="Language"></select>
     <button id="b-imp">Importar config</button>
     <button id="b-exp">Exportar config</button>
     <button id="b-rst">Repor tudo</button>
@@ -79,8 +81,8 @@ footer p{margin:4px 0}
 <nav><div class="wrap"><div id="tabs" role="tablist"></div></div></nav>
 <main class="wrap"><div id="panel"></div></main>
 <footer><div class="wrap">
-  <p>Projeto independente, não afiliado nem aprovado pelo Winhance (memstechtips). Não gera o ficheiro oficial do Winhance: gera um <code>autounattend.xml</code> padrão, com scripts embebidos que aplicam tweaks equivalentes. Reveja sempre o XML antes de o usar.</p>
-  <p>Um ficheiro de resposta pode apagar discos e configurar contas. Teste primeiro numa máquina virtual. Use por sua conta e risco.</p>
+  <p id="f1">Projeto independente, não afiliado nem aprovado pelo Winhance (memstechtips). Não gera o ficheiro oficial do Winhance: gera um <code>autounattend.xml</code> padrão, com scripts embebidos que aplicam tweaks equivalentes. Reveja sempre o XML antes de o usar.</p>
+  <p id="f2">Um ficheiro de resposta pode apagar discos e configurar contas. Teste primeiro numa máquina virtual. Use por sua conta e risco.</p>
 </div></footer>
 <input type="file" id="file" accept=".json,application/json" hidden>
 <script>
@@ -103,7 +105,7 @@ const NOCH=['','Não alterar'];
 /* ---------- separador Windows (instalação) ---------- */
 const tWin={id:'windows',title:'Windows',groups:[
  {title:'Idioma e região',opts:[
-  SEL('lang','Idioma do Windows','O ISO tem de incluir este idioma.',LANGS,'pt-PT'),
+  SEL('lang','Idioma do Windows','O ISO tem de incluir este idioma.',LANGS,'pt-PT',null,{raw:true}),
   SEL('kbd','Teclado',null,KBDS,'0816:00000816'),
   SEL('tz','Fuso horário',null,TZS,'GMT Standard Time')]},
  {title:'Edição e licença',opts:[
@@ -322,6 +324,325 @@ const PRESETS={
  rec:{on:['telem','adId','errRep','web','copilot','recall','activity','consumer','widgets','gmode','dvr','prio','bgapps','hiber','noReboot','doff','tips','lockTips','welcome','exExt','exHid','exCtx','tbTask','tbWid','tbChat','tbCop','stIris','stWeb','exRecent','exSync','od','ax_Microsoft.BingNews','ax_Microsoft.BingWeather','ax_Microsoft.GetHelp','ax_Microsoft.Getstarted','ax_Microsoft.MicrosoftOfficeHub','ax_Microsoft.MicrosoftSolitaireCollection','ax_Microsoft.WindowsFeedbackHub','ax_Microsoft.YourPhone','ax_Clipchamp.Clipchamp','ax_Microsoft.Copilot','ax_Microsoft.549981C3F5F10'],set:{theme:'dark',tbAlign:'0',exLaunch:'1',plan:'high'}},
  gam:{on:['telem','hags','gmode','dvr','xbar','mm','mouse','prio','visfx','bgapps','sysmain','hiber','fast','usbss','noReboot','noDrv','tips','toast','bootSnd'],set:{plan:'ultimate',theme:'dark'}}
 };
+/* ---------- English (en): keys are the Portuguese source strings ---------- */
+const DICTS={};
+const EN={};
+Object.assign(EN,{
+ /* window chrome */
+ 'Gerador de autounattend.xml':'autounattend.xml Generator',
+ 'Gerador de <code>autounattend.xml</code>':'<code>autounattend.xml</code> Generator',
+ 'Configure o Windows 10/11 por separadores (instalação, conta, privacidade, performance, tema, apps…) com opções inspiradas no Winhance. Tudo corre no browser; nada é enviado para lado nenhum.':'Configure Windows 10/11 in tabs (installation, account, privacy, performance, theme, apps…) with options inspired by Winhance. Everything runs in your browser; nothing is uploaded anywhere.',
+ 'Projeto independente, não afiliado nem aprovado pelo Winhance (memstechtips). Não gera o ficheiro oficial do Winhance: gera um <code>autounattend.xml</code> padrão, com scripts embebidos que aplicam tweaks equivalentes. Reveja sempre o XML antes de o usar.':'Independent project, not affiliated with or endorsed by Winhance (memstechtips). It does not produce Winhance\'s official file: it generates a standard <code>autounattend.xml</code> with embedded scripts that apply equivalent tweaks. Always review the XML before using it.',
+ 'Um ficheiro de resposta pode apagar discos e configurar contas. Teste primeiro numa máquina virtual. Use por sua conta e risco.':'An answer file can erase disks and create accounts. Test in a virtual machine first. Use at your own risk.',
+ 'Recomendado':'Recommended',
+ 'Aplica uma seleção equilibrada de otimizações':'Applies a balanced selection of optimizations',
+ 'Foco em desempenho e jogos':'Focused on performance and gaming',
+ 'Limpar tweaks':'Clear tweaks',
+ 'Desmarca todos os tweaks':'Unchecks all tweaks',
+ 'Importar config':'Import config',
+ 'Exportar config':'Export config',
+ 'Repor tudo':'Reset all',
+ 'Tema':'Theme',
+ 'Alternar tema':'Toggle theme',
+ /* generate tab and dialogs */
+ 'Gerar XML':'Generate XML',
+ 'JSON inválido: ':'Invalid JSON: ',
+ 'Atalhos':'Shortcuts',
+ 'Clique para adicionar ou remover programas populares.':'Click to add or remove popular programs.',
+ 'Importar winget-apps.json':'Import winget-apps.json',
+ 'Copiado!':'Copied!',
+ 'Copiar XML':'Copy XML',
+ 'XML inválido: ':'Invalid XML: ',
+ 'XML bem formado':'Well-formed XML',
+ 'Descarregar autounattend.xml':'Download autounattend.xml',
+ 'Coloque o ficheiro na raiz do pendrive de instalação do Windows (junto a setup.exe) ou injete-o no ISO.':'Place the file in the root of the Windows installation USB drive (next to setup.exe) or inject it into the ISO.',
+ 'Atenção: ':'Warning: ',
+ 'Pré-visualização':'Preview',
+ 'system.ps1 (fase specialize, como SYSTEM)':'system.ps1 (specialize pass, runs as SYSTEM)',
+ 'firstlogon.ps1 (primeiro início de sessão)':'firstlogon.ps1 (first sign-in)',
+ 'Repor todas as opções para os valores iniciais?':'Reset all options to their default values?',
+ 'Ficheiro inválido: ':'Invalid file: ',
+ /* notes */
+ 'O disco 0 será APAGADO sem confirmação e particionado em GPT/UEFI.':'Disk 0 will be ERASED without confirmation and partitioned as GPT/UEFI.',
+ 'A chave de produto não tem o formato XXXXX-XXXXX-XXXXX-XXXXX-XXXXX.':'The product key is not in the XXXXX-XXXXX-XXXXX-XXXXX-XXXXX format.',
+ 'Nome do computador inválido: use até 15 letras, números ou hífens.':'Invalid computer name: use up to 15 letters, digits or hyphens.',
+ 'Nome de utilizador inválido (sem espaços nem caracteres especiais, máx. 20).':'Invalid user name (no spaces or special characters, max. 20).',
+ 'A palavra-passe fica em texto simples no XML (e em C:\\Windows\\Panther). Não partilhe o ficheiro nem o envie para o GitHub.':'The password is stored in plain text in the XML (and in C:\\Windows\\Panther). Do not share the file or upload it to GitHub.',
+ 'Conta sem palavra-passe: defina uma depois da instalação.':'Account without a password: set one after installation.',
+ 'A conta de utilizador será pedida durante o OOBE (região, teclado e nome).':'The user account will be requested during OOBE (region, keyboard and name).',
+ 'As atualizações automáticas ficam desativadas: o PC deixa de receber correções de segurança até as reativar.':'Automatic updates will be disabled: the PC will stop receiving security fixes until you re-enable them.',
+ 'Algumas definições são aplicadas por política; o Windows pode mostrar «Algumas definições são geridas pela sua organização».':'Some settings are applied through policy; Windows may show "Some settings are managed by your organization".',
+ 'Em compilações recentes do Windows 11 o BypassNRO pode ser ignorado; criar a conta local aqui evita o problema.':'On recent Windows 11 builds BypassNRO may be ignored; creating the local account here avoids the problem.',
+ 'Nenhum tweak selecionado: o XML só trata da instalação e do OOBE.':'No tweaks selected: the XML only handles installation and OOBE.',
+ /* tab Windows */
+ 'Idioma e região':'Language and region',
+ 'Idioma do Windows':'Windows language',
+ 'O ISO tem de incluir este idioma.':'Your ISO must include this language.',
+ 'Teclado':'Keyboard',
+ 'Português (Portugal)':'Portuguese (Portugal)',
+ 'Português (Brasil ABNT2)':'Portuguese (Brazil ABNT2)',
+ 'Inglês (EUA)':'English (US)',
+ 'Inglês (Reino Unido)':'English (UK)',
+ 'Espanhol (Espanha)':'Spanish (Spain)',
+ 'Francês':'French',
+ 'Alemão':'German',
+ 'Fuso horário':'Time zone',
+ 'Perguntar / predefinido':'Ask / default',
+ 'Lisboa / Londres (GMT)':'Lisbon / London (GMT)',
+ 'Europa Ocidental (Berlim, Paris…)':'Western Europe (Berlin, Paris…)',
+ 'Europa Central':'Central Europe',
+ 'Açores':'Azores',
+ 'Brasília':'Brasília',
+ 'EUA Leste':'US Eastern',
+ 'EUA Pacífico':'US Pacific',
+ 'Edição e licença':'Edition and license',
+ 'Edição do Windows':'Windows edition',
+ '«Perguntar» mostra o ecrã de escolha. As chaves genéricas só escolhem a edição, não ativam o Windows.':'"Ask" shows the edition picker. Generic keys only select the edition; they do not activate Windows.',
+ 'Perguntar durante a instalação':'Ask during installation',
+ 'Pro (chave genérica)':'Pro (generic key)',
+ 'Home (chave genérica)':'Home (generic key)',
+ 'Enterprise (chave genérica)':'Enterprise (generic key)',
+ 'Education (chave genérica)':'Education (generic key)',
+ 'Chave própria…':'Own key…',
+ 'Chave de produto':'Product key',
+ 'Formato XXXXX-XXXXX-XXXXX-XXXXX-XXXXX':'Format XXXXX-XXXXX-XXXXX-XXXXX-XXXXX',
+ 'Arquitetura':'Architecture',
+ 'A do seu ISO.':'The one of your ISO.',
+ 'x86 (32 bits)':'x86 (32-bit)',
+ 'Verificações de hardware (Windows 11)':'Hardware checks (Windows 11)',
+ 'Gravadas em HKLM\\SYSTEM\\Setup\\LabConfig durante a instalação.':'Written to HKLM\\SYSTEM\\Setup\\LabConfig during setup.',
+ 'Ignorar TPM 2.0':'Bypass TPM 2.0',
+ 'Ignorar Secure Boot':'Bypass Secure Boot',
+ 'Ignorar requisito de RAM (4 GB)':'Bypass RAM requirement (4 GB)',
+ 'Ignorar compatibilidade de CPU':'Bypass CPU compatibility',
+ 'Ignorar espaço de armazenamento':'Bypass storage space check',
+ 'Ignorar tipo de disco':'Bypass disk type check',
+ 'Instalação':'Installation',
+ 'Particionar e apagar o disco 0 automaticamente':'Automatically partition and wipe disk 0',
+ 'Cria EFI + MSR + Windows (GPT) e APAGA TODO o disco 0 sem perguntar. Só para UEFI.':'Creates EFI + MSR + Windows (GPT) and ERASES the whole of disk 0 without asking. UEFI only.',
+ 'Desligar a rede durante a instalação':'Disable the network during setup',
+ 'Desativa os adaptadores até ao primeiro início de sessão. Evita conta Microsoft forçada e downloads do Windows Update a meio.':'Disables the adapters until the first sign-in. Avoids a forced Microsoft account and mid-setup Windows Update downloads.',
+ 'Permitir conta local sem internet (BypassNRO)':'Allow a local account without internet (BypassNRO)',
+ 'Instalar .NET Framework 3.5':'Install .NET Framework 3.5',
+ 'Procura \\sources\\sxs nas unidades; requer o ISO original.':'Looks for \\sources\\sxs on the drives; requires the original ISO.',
+ 'Ecrãs do OOBE':'OOBE screens',
+ 'Ocultar contrato de licença (EULA)':'Hide license agreement (EULA)',
+ 'Ocultar registo OEM':'Hide OEM registration',
+ 'Ocultar ecrãs de conta online':'Hide online account screens',
+ 'Ocultar configuração de Wi-Fi':'Hide Wi-Fi setup',
+ 'Definições de privacidade (ProtectYourPC)':'Privacy settings (ProtectYourPC)',
+ '3 = desativa o envio de dados de diagnóstico no OOBE.':'3 = disables sending diagnostic data during OOBE.',
+ '3 · Desativar':'3 · Disable',
+ '2 · Só atualizações':'2 · Updates only',
+ '1 · Definições rápidas':'1 · Express settings',
+});
+Object.assign(EN,{
+ /* tab Account */
+ 'Conta de utilizador':'User account',
+ 'Conta':'Account',
+ 'Criação da conta':'Account creation',
+ '«Perguntar» deixa o OOBE pedir região, teclado e nome de utilizador.':'"Ask" lets OOBE request region, keyboard and user name.',
+ 'Criar conta local automaticamente':'Create a local account automatically',
+ 'Nome de utilizador':'User name',
+ 'Sem espaços nem caracteres especiais.':'No spaces or special characters.',
+ 'Nome apresentado':'Display name',
+ 'Palavra-passe':'Password',
+ 'Fica em texto simples no XML. Pode ficar vazia e ser definida depois.':'Stored in plain text in the XML. It can be left empty and set later.',
+ 'Tipo de conta':'Account type',
+ 'Administrador':'Administrator',
+ 'Utilizador padrão':'Standard user',
+ 'Iniciar sessão automaticamente uma vez':'Sign in automatically once',
+ 'Útil para correr os scripts do primeiro arranque sem intervenção.':'Useful to run the first-logon scripts without intervention.',
+ 'Palavra-passe que nunca expira':'Password never expires',
+ 'Aplicado no primeiro início de sessão (requer conta de administrador).':'Applied at first sign-in (requires an administrator account).',
+ 'Computador':'Computer',
+ 'Nome do computador':'Computer name',
+ 'Vazio = automático. Máx. 15 caracteres, sem espaços.':'Empty = automatic. Max. 15 characters, no spaces.',
+ 'Proprietário registado':'Registered owner',
+ 'Organização':'Organization',
+ 'Âmbito das personalizações':'Scope of customizations',
+ 'Aplicar tweaks de utilizador (tema, barra de tarefas, Explorador…)':'Apply per-user tweaks (theme, taskbar, Explorer…)',
+ '«Perfil Default» aplica-se a todos os utilizadores novos. «Primeiro utilizador» corre no primeiro início de sessão.':'"Default profile" applies to all new users. "First user only" runs at the first sign-in.',
+ 'Todos os novos utilizadores (perfil Default)':'All new users (Default profile)',
+ 'Só o primeiro utilizador':'First user only',
+ /* tab Privacy */
+ 'Privacidade e segurança':'Privacy and security',
+ 'Telemetria e dados':'Telemetry and data',
+ 'Reduzir telemetria ao mínimo':'Reduce telemetry to the minimum',
+ 'Política AllowTelemetry=0 e desativa os serviços DiagTrack e dmwappushservice.':'Sets the AllowTelemetry=0 policy and disables the DiagTrack and dmwappushservice services.',
+ 'Desativar ID de publicidade e experiências personalizadas':'Disable advertising ID and tailored experiences',
+ 'Desativar relatório de erros do Windows':'Disable Windows Error Reporting',
+ 'Desativar sincronização de definições':'Disable settings sync',
+ 'Pesquisa e IA':'Search and AI',
+ 'Desativar pesquisa Web (Bing) na pesquisa do Windows':'Disable web (Bing) results in Windows Search',
+ 'Desativar Windows Copilot':'Disable Windows Copilot',
+ 'Desativar Recall (análise de dados por IA)':'Disable Recall (AI data analysis)',
+ 'Atividade e localização':'Activity and location',
+ 'Desativar histórico de atividades':'Disable activity history',
+ 'Desativar localização':'Disable location',
+ 'Desativar sugestões e conteúdos de consumo da Microsoft':'Disable Microsoft consumer features and suggestions',
+ 'Sistema':'System',
+ 'Impedir encriptação automática do dispositivo (BitLocker)':'Prevent automatic device encryption (BitLocker)',
+ 'Desativar Widgets / Notícias e interesses':'Disable Widgets / News and interests',
+ /* tab Performance */
+ 'Performance e gaming':'Performance and gaming',
+ 'Ativar agendamento de GPU acelerado por hardware (HAGS)':'Enable hardware-accelerated GPU scheduling (HAGS)',
+ 'Requer GPU e driver compatíveis.':'Requires a compatible GPU and driver.',
+ 'Ativar Modo de Jogo':'Enable Game Mode',
+ 'Desativar captura Game DVR':'Disable Game DVR capture',
+ 'Desativar Xbox Game Bar':'Disable Xbox Game Bar',
+ 'Priorizar multimédia e remover limitação de rede':'Prioritize multimedia and remove network throttling',
+ 'Desativar aceleração do rato (precisão do ponteiro)':'Disable mouse acceleration (pointer precision)',
+ 'Desempenho geral':'General performance',
+ 'Dar prioridade aos programas em primeiro plano':'Prioritize foreground programs',
+ 'Efeitos visuais para melhor desempenho':'Visual effects for best performance',
+ 'Impedir apps de correrem em segundo plano':'Prevent apps from running in the background',
+ 'Desativar SysMain (Superfetch)':'Disable SysMain (Superfetch)',
+ 'Pode ajudar em HDD; em SSD o ganho é pequeno.':'May help on HDDs; the gain on SSDs is small.',
+ 'Desativar indexação de ficheiros (Windows Search)':'Disable file indexing (Windows Search)',
+ 'A pesquisa no Explorador fica mais lenta.':'Searching in File Explorer becomes slower.',
+ 'Desativar armazenamento reservado do Windows':'Disable Windows reserved storage',
+ /* tab Power */
+ 'Energia':'Power',
+ 'Plano de energia':'Power plan',
+ 'Não alterar':'Do not change',
+ 'Alto desempenho':'High performance',
+ 'Desempenho máximo':'Ultimate performance',
+ 'Poupança de energia':'Power saver',
+ 'Desativar hibernação':'Disable hibernation',
+ 'Desativar arranque rápido':'Disable fast startup',
+ 'Desativar suspensão seletiva de USB':'Disable USB selective suspend',
+ 'Tempos limite':'Timeouts',
+ 'Desligar ecrã (ligado à corrente)':'Turn off screen (plugged in)',
+ 'Nunca':'Never',
+ '5 minutos':'5 minutes',
+ '10 minutos':'10 minutes',
+ '15 minutos':'15 minutes',
+ '30 minutos':'30 minutes',
+ '1 hora':'1 hour',
+ '2 horas':'2 hours',
+ 'Desligar ecrã (bateria)':'Turn off screen (battery)',
+ 'Suspender (ligado à corrente)':'Sleep (plugged in)',
+ 'Suspender (bateria)':'Sleep (battery)',
+});
+Object.assign(EN,{
+ /* tab Updates */
+ 'Desativar Storage Sense':'Disable Storage Sense',
+ 'Atualizações':'Updates',
+ 'Modo de atualização':'Update mode',
+ 'Aplicado por política (o Windows mostra «gerido pela organização»).':'Applied through policy (Windows shows "managed by your organization").',
+ 'Notificar antes de transferir':'Notify before downloading',
+ 'Adiar atualizações de funcionalidades (1 ano)':'Defer feature updates (1 year)',
+ 'Desativar atualizações automáticas':'Disable automatic updates',
+ 'Não reiniciar automaticamente com sessão iniciada':'Do not restart automatically while signed in',
+ 'Não instalar drivers via Windows Update':'Do not install drivers through Windows Update',
+ 'Desativar otimização de entrega (partilha P2P)':'Disable Delivery Optimization (P2P sharing)',
+ 'Desativar atualizações automáticas da Microsoft Store':'Disable automatic Microsoft Store updates',
+ /* tab Notifications and sound */
+ 'Notificações e som':'Notifications and sound',
+ 'Notificações e sugestões':'Notifications and suggestions',
+ 'Desativar dicas, sugestões e anúncios do Windows':'Disable Windows tips, suggestions and ads',
+ 'Desativar dicas no ecrã de bloqueio':'Disable lock screen tips',
+ 'Desativar «experiência de boas-vindas» e sugestões de configuração':'Disable the "welcome experience" and setup suggestions',
+ 'Desativar todas as notificações (toasts)':'Disable all notifications (toasts)',
+ 'Som':'Sound',
+ 'Desativar som de arranque':'Disable startup sound',
+ 'Esquema de sons: sem sons':'Sound scheme: no sounds',
+ /* tab Theme */
+ 'Aparência do Windows':'Windows appearance',
+ 'Modo de cor':'Color mode',
+ 'Escuro':'Dark',
+ 'Claro':'Light',
+ 'Efeitos de transparência':'Transparency effects',
+ 'Ativados':'Enabled',
+ 'Desativados':'Disabled',
+ 'Desativar animações do Windows':'Disable Windows animations',
+ 'Ícones do ambiente de trabalho':'Desktop icons',
+ 'Mostrar «Este PC»':'Show "This PC"',
+ 'Mostrar pasta do utilizador':'Show user folder',
+ 'Mostrar Painel de Controlo':'Show Control Panel',
+ /* tab Taskbar */
+ 'Barra de tarefas':'Taskbar',
+ 'Disposição':'Layout',
+ 'Alinhamento dos ícones (Windows 11)':'Icon alignment (Windows 11)',
+ 'À esquerda':'Left',
+ 'Ao centro':'Center',
+ 'Pesquisa na barra':'Search in taskbar',
+ 'Oculta':'Hidden',
+ 'Só ícone':'Icon only',
+ 'Caixa de pesquisa':'Search box',
+ 'Ícone e rótulo':'Icon and label',
+ 'Agrupar botões da barra':'Combine taskbar buttons',
+ 'Sempre':'Always',
+ 'Quando a barra estiver cheia':'When taskbar is full',
+ 'Botões':'Buttons',
+ 'Ocultar botão Vista de Tarefas':'Hide Task View button',
+ 'Ocultar botão Widgets':'Hide Widgets button',
+ 'Ocultar botão Chat/Teams':'Hide Chat/Teams button',
+ 'Ocultar botão Copilot':'Hide Copilot button',
+ 'Mostrar segundos no relógio':'Show seconds in the clock',
+ /* tab Start menu */
+ 'Menu Iniciar':'Start menu',
+ 'Disposição (Windows 11)':'Layout (Windows 11)',
+ 'Predefinida':'Default',
+ 'Mais fixados':'More pins',
+ 'Mais recomendações':'More recommendations',
+ 'Ocultar secção «Recomendado»':'Hide the "Recommended" section',
+ 'Pode só ter efeito em algumas edições (Education/Enterprise).':'May only take effect on some editions (Education/Enterprise).',
+ 'Desativar sugestões e notificações da conta no Iniciar':'Disable account suggestions and notifications in Start',
+ 'Não mostrar ficheiros recentes no Iniciar':'Do not show recent files in Start',
+ 'Desativar sugestões web na caixa de pesquisa':'Disable web suggestions in the search box',
+ /* tab Explorer */
+ 'Explorador de Ficheiros':'File Explorer',
+ 'Visualização':'View',
+ 'Mostrar extensões de ficheiros':'Show file extensions',
+ 'Mostrar ficheiros e pastas ocultos':'Show hidden files and folders',
+ 'Mostrar caminho completo na barra de título':'Show full path in the title bar',
+ 'Vista compacta (menos espaçamento)':'Compact view (less spacing)',
+ 'Menu de contexto clássico (Windows 11)':'Classic context menu (Windows 11)',
+ 'Comportamento':'Behavior',
+ 'Abrir o Explorador em':'Open File Explorer to',
+ 'Este PC':'This PC',
+ 'Início / Acesso rápido':'Home / Quick access',
+ 'Transferências':'Downloads',
+ 'Não mostrar ficheiros recentes/frequentes':'Do not show recent/frequent files',
+ 'Ocultar anúncios do fornecedor de sincronização':'Hide sync provider notifications',
+ /* tab Apps */
+ 'Apps do Windows':'Windows apps',
+ 'Aplicações (Appx)':'Applications (Appx)',
+ 'Remove o pacote para todos os utilizadores e o pacote provisionado (não volta em contas novas).':'Removes the package for all users and the provisioned package (it does not come back on new accounts).',
+ 'Notícias':'News',
+ 'Meteorologia':'Weather',
+ 'Obter Ajuda':'Get Help',
+ 'Sugestões (Tips)':'Tips',
+ 'Pessoas':'People',
+ 'Hub de Comentários':'Feedback Hub',
+ 'Mapas':'Maps',
+ 'Media Player (Groove)':'Media Player (Groove)',
+ 'Filmes e TV':'Movies & TV',
+ 'Ligação ao Telemóvel':'Phone Link',
+ 'Teams (pessoal)':'Teams (personal)',
+ 'Teams (novo)':'Teams (new)',
+ 'Outlook (novo)':'Outlook (new)',
+ 'Relógio e Alarmes':'Clock and Alarms',
+ 'Câmara':'Camera',
+ 'Gravador de Som':'Sound Recorder',
+ 'Notas Autocolantes':'Sticky Notes',
+ 'Assistência Rápida':'Quick Assist',
+ 'Funcionalidades opcionais do Windows':'Optional Windows features',
+ 'Assistência Rápida (funcionalidade)':'Quick Assist (feature)',
+ 'Gravador de Passos':'Steps Recorder',
+ 'Reconhecimento Matemático':'Math Recognizer',
+ 'Recall (funcionalidade opcional)':'Recall (optional feature)',
+ 'Desativa a funcionalidade.':'Disables the feature.',
+ 'Remover o OneDrive':'Remove OneDrive',
+ /* tab Software */
+ 'Software (winget)':'Software (winget)',
+ 'Instalar no primeiro início de sessão':'Install at first sign-in',
+ 'Um ID do winget por linha (ex.: 7zip.7zip). Precisa de internet; a rede é reativada antes. Pode importar o winget-apps.json gerado pelo Programas.cmd.':'One winget ID per line (e.g. 7zip.7zip). Requires internet; the network is re-enabled first. You can import the winget-apps.json produced by Programas.cmd.',
+ 'IDs de pacotes winget':'winget package IDs',
+});
+DICTS.en=EN;
 /* ---------- estado ---------- */
 let S={},cur='windows';
 const allOpts=()=>tabs.flatMap(t=>t.groups.flatMap(g=>g.opts));
@@ -339,6 +660,8 @@ function applyPreset(p){
 function count(t){return t.groups.reduce((n,g)=>n+g.opts.filter(o=>S[o.id]!==o.def&&(o.type!=='toggle'||S[o.id])).length,0)}
 
 /* ---------- DOM ---------- */
+let LANG='en';
+const tr=s=>{if(s==null)return s;const d=DICTS[LANG];return d&&d[s]!==undefined?d[s]:s};
 const $=s=>document.querySelector(s);
 function el(tag,a={},...kids){
  const e=document.createElement(tag);
@@ -354,12 +677,12 @@ function renderTabs(){
  const box=$('#tabs');box.innerHTML='';
  for(const t of tabs){
   const n=t.id==='gerar'?0:count(t);
-  box.append(el('button',{role:'tab','aria-selected':String(t.id===cur),onclick:()=>{cur=t.id;refresh(true)}},t.title,n?el('span',{class:'badge',text:n}):null));
+  box.append(el('button',{role:'tab','aria-selected':String(t.id===cur),onclick:()=>{cur=t.id;refresh(true)}},tr(t.title),n?el('span',{class:'badge',text:n}):null));
  }
 }
 function field(o){
  const v=S[o.id];
- const head=el('span',{class:'t'},el('b',{text:o.label}),o.desc?el('small',{text:o.desc}):null);
+ const head=el('span',{class:'t'},el('b',{text:tr(o.label)}),o.desc?el('small',{text:tr(o.desc)}):null);
  if(o.type==='toggle'){
   const i=el('input',{type:'checkbox',onchange:e=>{S[o.id]=e.target.checked;save();refresh()}});
   i.checked=!!v;
@@ -367,7 +690,7 @@ function field(o){
  }
  let inp;
  if(o.type==='select'){
-  inp=el('select',{onchange:e=>{S[o.id]=e.target.value;save();refresh()}},o.opts.map(([a,b])=>el('option',{value:a,text:b})));
+  inp=el('select',{onchange:e=>{S[o.id]=e.target.value;save();refresh()}},o.opts.map(([a,b])=>el('option',{value:a,text:o.raw?b:tr(b)})));
   inp.value=v;
  }else if(o.type==='textarea'){
   inp=el('textarea',{spellcheck:'false',placeholder:'7zip.7zip\nVideoLAN.VLC',onchange:e=>{S[o.id]=e.target.value;save();refresh()}});
@@ -386,7 +709,7 @@ function renderPanel(){
  for(const g of t.groups){
   const opts=g.opts.filter(o=>!o.show||o.show(S));
   if(!opts.length)continue;
-  p.append(el('section',{class:'card'},el('h2',{text:g.title}),g.gd?el('p',{class:'gd',text:g.gd}):null,opts.map(field)));
+  p.append(el('section',{class:'card'},el('h2',{text:tr(g.title)}),g.gd?el('p',{class:'gd',text:tr(g.gd)}):null,opts.map(field)));
  }
  if(t.id==='software')p.append(softExtras());
 }
@@ -400,11 +723,11 @@ function softExtras(){
    const j=JSON.parse((await f.text()).replace(/^﻿/,''));
    const add=(j.Sources||[]).flatMap(s=>(s.Packages||[]).map(x=>x.PackageIdentifier)).filter(Boolean);
    S.wg=[...new Set([...ids(),...add])].join('\n');save();refresh();
-  }catch(err){alert('JSON inválido: '+err.message)}
+  }catch(err){alert(tr('JSON inválido: ')+err.message)}
  }});
- return el('section',{class:'card'},el('h2',{text:'Atalhos'}),
-  el('p',{class:'gd',text:'Clique para adicionar ou remover programas populares.'}),chips,
-  el('div',{class:'acts'},el('button',{onclick:()=>imp.click()},'Importar winget-apps.json'),imp));
+ return el('section',{class:'card'},el('h2',{text:tr('Atalhos')}),
+  el('p',{class:'gd',text:tr('Clique para adicionar ou remover programas populares.')}),chips,
+  el('div',{class:'acts'},el('button',{onclick:()=>imp.click()},tr('Importar winget-apps.json')),imp));
 }
 function refresh(keepTop){
  const y=window.scrollY;renderTabs();renderPanel();
@@ -440,27 +763,27 @@ function scripts(c){
  const head=n=>["$ErrorActionPreference = 'SilentlyContinue'",`Start-Transcript -Path "$env:ProgramData\\WinTweaks\\${n}.log" -Append | Out-Null`,''];
  /* sistema (fase specialize, como SYSTEM) */
  const s=head('system');
- if(hklm.length){s.push('# Registo (HKLM)');hklm.forEach(r=>s.push(regLine(r,'HKLM')));s.push('')}
+ if(hklm.length){s.push('# Registry (HKLM)');hklm.forEach(r=>s.push(regLine(r,'HKLM')));s.push('')}
  if(def&&hkcu.length){
-  s.push('# Perfil Default: aplica-se a todos os utilizadores novos','reg load HKU\\WH_DEF C:\\Users\\Default\\NTUSER.DAT | Out-Null');
+  s.push('# Default profile: applies to all new users','reg load HKU\\WH_DEF C:\\Users\\Default\\NTUSER.DAT | Out-Null');
   hkcu.forEach(r=>s.push(regLine(r,'HKU\\WH_DEF')));
   s.push('[GC]::Collect(); [GC]::WaitForPendingFinalizers(); Start-Sleep 1','reg unload HKU\\WH_DEF | Out-Null','');
  }
  if(S.net35)s.push('# .NET Framework 3.5',"foreach ($d in (Get-PSDrive -PSProvider FileSystem)) { $p = Join-Path $d.Root 'sources\\sxs'; if (Test-Path $p) { dism /online /enable-feature /featurename:NetFx3 /All /Source:$p /LimitAccess | Out-Null; break } }",'');
- if(c.ps.length)s.push('# Comandos',...c.ps,'');
- if(c.appx.length)s.push('# Remover apps',`$apps = @(${c.appx.map(n=>"'"+psq(n)+"'").join(', ')})`,'foreach ($n in $apps) {','  Get-AppxPackage -AllUsers -Name $n | Remove-AppxPackage -AllUsers','  Get-AppxProvisionedPackage -Online | Where-Object { $_.DisplayName -eq $n } | Remove-AppxProvisionedPackage -Online | Out-Null','}','');
+ if(c.ps.length)s.push('# Commands',...c.ps,'');
+ if(c.appx.length)s.push('# Remove apps',`$apps = @(${c.appx.map(n=>"'"+psq(n)+"'").join(', ')})`,'foreach ($n in $apps) {','  Get-AppxPackage -AllUsers -Name $n | Remove-AppxPackage -AllUsers','  Get-AppxProvisionedPackage -Online | Where-Object { $_.DisplayName -eq $n } | Remove-AppxProvisionedPackage -Online | Out-Null','}','');
  s.push('Stop-Transcript | Out-Null');
  const hasSys=!!(hklm.length||(def&&hkcu.length)||S.net35||c.ps.length||c.appx.length);
  /* primeiro início de sessão (como utilizador) */
  const L=head('firstlogon');
  if(!def&&hkcu.length){
-  L.push('# Registo (HKCU)');hkcu.forEach(r=>L.push(regLine(r,'HKCU')));
+  L.push('# Registry (HKCU)');hkcu.forEach(r=>L.push(regLine(r,'HKCU')));
   L.push('Stop-Process -Name explorer -Force','');
  }
  if(local&&S.pwNever&&S.accName)L.push(`Set-LocalUser -Name '${psq(S.accName)}' -PasswordNeverExpires $true`,'');
- if(c.logon.length)L.push('# Comandos',...c.logon,'');
+ if(c.logon.length)L.push('# Commands',...c.logon,'');
  if(ids.length){
-  L.push('# winget: aguardar rede e instalar',
+  L.push('# winget: wait for network and install',
    'for ($i = 0; $i -lt 30 -and -not (Test-Connection 1.1.1.1 -Count 1 -Quiet); $i++) { Start-Sleep 2 }',
    `$ids = @(${ids.map(i=>"'"+i+"'").join(', ')})`,
    'for ($i = 0; $i -lt 30 -and -not (Get-Command winget -ErrorAction SilentlyContinue); $i++) { Start-Sleep 10 }',
@@ -564,35 +887,63 @@ async function copyText(t,btn){
  try{await navigator.clipboard.writeText(t)}catch(e){
   const ta=el('textarea',{style:'position:fixed;opacity:0'});ta.value=t;document.body.append(ta);ta.select();document.execCommand('copy');ta.remove();
  }
- if(btn){const o=btn.textContent;btn.textContent='Copiado!';setTimeout(()=>btn.textContent=o,1400)}
+ if(btn){const o=btn.textContent;btn.textContent=tr('Copiado!');setTimeout(()=>btn.textContent=o,1400)}
 }
 function renderGen(p){
  const r=build();
  const doc=new DOMParser().parseFromString(r.xml,'application/xml');
  const bad=doc.querySelector('parsererror');
- const copy=el('button',{},'Copiar XML');
+ const copy=el('button',{},tr('Copiar XML'));
  copy.onclick=()=>copyText(r.xml,copy);
  p.append(el('section',{class:'card'},
   el('h2',{text:'autounattend.xml'}),
-  el('p',{class:'status '+(bad?'bad':'ok'),text:bad?'XML inválido: '+bad.textContent.slice(0,200):'XML bem formado'}),
-  el('div',{class:'acts'},el('button',{class:'pri',onclick:()=>download('autounattend.xml',r.xml,'application/xml')},'Descarregar autounattend.xml'),copy),
-  el('p',{class:'hint',text:'Coloque o ficheiro na raiz do pendrive de instalação do Windows (junto a setup.exe) ou injete-o no ISO.'}),
-  r.notes.length?el('ul',{class:'notes'},r.notes.map(([k,t])=>el('li',{class:k==='w'?'w':''},(k==='w'?'Atenção: ':'')+t))):null),
-  el('section',{class:'card'},el('h2',{text:'Pré-visualização'}),el('pre',{text:r.xml}),
-   r.hasSys?el('details',{},el('summary',{text:'system.ps1 (fase specialize, como SYSTEM)'}),el('pre',{text:r.sys})):null,
-   r.hasLogon?el('details',{},el('summary',{text:'firstlogon.ps1 (primeiro início de sessão)'}),el('pre',{text:r.logon})):null));
+  el('p',{class:'status '+(bad?'bad':'ok'),text:bad?tr('XML inválido: ')+bad.textContent.slice(0,200):tr('XML bem formado')}),
+  el('div',{class:'acts'},el('button',{class:'pri',onclick:()=>download('autounattend.xml',r.xml,'application/xml')},tr('Descarregar autounattend.xml')),copy),
+  el('p',{class:'hint',text:tr('Coloque o ficheiro na raiz do pendrive de instalação do Windows (junto a setup.exe) ou injete-o no ISO.')}),
+  r.notes.length?el('ul',{class:'notes'},r.notes.map(([k,t])=>el('li',{class:k==='w'?'w':''},(k==='w'?tr('Atenção: '):'')+tr(t)))):null),
+  el('section',{class:'card'},el('h2',{text:tr('Pré-visualização')}),el('pre',{text:r.xml}),
+   r.hasSys?el('details',{},el('summary',{text:tr('system.ps1 (fase specialize, como SYSTEM)')}),el('pre',{text:r.sys})):null,
+   r.hasLogon?el('details',{},el('summary',{text:tr('firstlogon.ps1 (primeiro início de sessão)')}),el('pre',{text:r.logon})):null));
 }
+
+/* ---------- idioma da interface ---------- */
+const UILANGS=[['en','English'],['pt','Português (PT)']];
+const CHROME_HTML=['h1','sub','f1','f2'].map(id=>[id,$('#'+id).innerHTML.trim()]);
+const CHROME_TXT=['b-rec','b-gam','b-min','b-imp','b-exp','b-rst','b-th'].map(id=>[id,$('#'+id).textContent.trim()]);
+const CHROME_TTL=['b-rec','b-gam','b-min','b-th'].map(id=>[id,$('#'+id).getAttribute('title')]);
+const TITLE_PT=document.title;
+function applyChrome(){
+ for(const[id,v]of CHROME_HTML)$('#'+id).innerHTML=tr(v);
+ for(const[id,v]of CHROME_TXT)$('#'+id).textContent=tr(v);
+ for(const[id,v]of CHROME_TTL)$('#'+id).setAttribute('title',tr(v));
+ document.title=tr(TITLE_PT);
+ document.documentElement.lang=LANG==='pt'?'pt-PT':'en';
+ $('#lang').value=LANG;
+}
+function setLang(l){
+ LANG=DICTS[l]||l==='pt'?l:'en';
+ try{localStorage.setItem('wh-lang',LANG)}catch(e){}
+ applyChrome();refresh();
+}
+(function initLang(){
+ const sel=$('#lang');
+ for(const[v,n]of UILANGS)sel.append(el('option',{value:v,text:n}));
+ sel.onchange=e=>setLang(e.target.value);
+ let l='en';
+ try{l=new URLSearchParams(location.search).get('lang')||localStorage.getItem('wh-lang')||'en'}catch(e){}
+ LANG=(l==='pt'||DICTS[l])?l:'en';
+})();
 
 /* ---------- ações do cabeçalho ---------- */
 $('#b-rec').onclick=()=>applyPreset(PRESETS.rec);
 $('#b-gam').onclick=()=>applyPreset(PRESETS.gam);
 $('#b-min').onclick=()=>applyPreset(null);
-$('#b-rst').onclick=()=>{if(confirm('Repor todas as opções para os valores iniciais?')){defaults();save();refresh(true)}};
+$('#b-rst').onclick=()=>{if(confirm(tr('Repor todas as opções para os valores iniciais?'))){defaults();save();refresh(true)}};
 $('#b-exp').onclick=()=>download('autounattend-config.json',JSON.stringify(S,null,2),'application/json');
 $('#b-imp').onclick=()=>$('#file').click();
 $('#file').onchange=async e=>{
  const f=e.target.files[0];e.target.value='';if(!f)return;
- try{merge(JSON.parse(await f.text()));save();refresh()}catch(err){alert('Ficheiro inválido: '+err.message)}
+ try{merge(JSON.parse(await f.text()));save();refresh()}catch(err){alert(tr('Ficheiro inválido: ')+err.message)}
 };
 $('#b-th').onclick=()=>{
  const r=document.documentElement,o=['auto','light','dark'],n=o[(o.indexOf(r.dataset.theme||'auto')+1)%3];
@@ -602,7 +953,7 @@ $('#b-th').onclick=()=>{
 try{const th=localStorage.getItem('wh-theme');if(th&&th!=='auto')document.documentElement.dataset.theme=th}catch(e){}
 
 /* ---------- arranque ---------- */
-defaults();load();refresh(true);
+defaults();load();applyChrome();refresh(true);
 </script>
 </body>
 </html>

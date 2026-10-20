@@ -19,11 +19,11 @@ Create a Windows 10/11 `autounattend.xml` answer file by picking options in tabs
 ## How to use
 
 1. Open the generator and choose your options (or start from the *Recommended* or *Gaming* preset).
-2. Go to **Gerar XML** (Generate XML), read the warnings and download `autounattend.xml`.
+2. Go to **Generate XML**, read the warnings and download `autounattend.xml`.
 3. Copy the file to the root of your Windows installation USB drive, next to `setup.exe`.
 4. Boot from the USB drive and install Windows.
 
-> The generator interface is currently in Portuguese (pt-PT).
+> The generator is in English by default; use the language menu in its top bar to switch to Portuguese.
 
 ## Read before using
 
