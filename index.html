@@ -88,7 +88,7 @@ footer p{margin:4px 0}
   <p class="sub" id="sub">Configure Windows 10/11 in tabs (installation, account, privacy, performance, theme, apps…) with options inspired by Winhance. Everything runs in your browser; nothing is uploaded anywhere.</p>
   <div class="bar">
     <button id="b-rec" title="Applies a balanced selection of optimizations">Recommended (all tabs)</button>
-    <button id="b-gam" title="Focused on performance and gaming">Gaming</button>
+    <button id="b-gam" title="Ultimate gaming setup on every tab: performance tweaks, Ultimate power plan, ULTIMATE debloat and Gaming services">Gaming</button>
     <button id="b-min" title="Unchecks all tweaks">Clear tweaks</button>
     <span class="sp"></span>
     <select id="lang" aria-label="Language" title="Language"></select>
@@ -394,9 +394,11 @@ const tDebloat={id:'debloat',title:'Debloat',groups:[
   T('svcMisc','Disable unused services (Retail Demo, Downloaded Maps Manager)',null,()=>[HK(SVC+'RetailDemo','Start',D,4),HK(SVC+'MapsBroker','Start',D,4)]),
   T('svcXbox','Disable Xbox services','Breaks Xbox, Game Pass and Xbox sign-in. Only for people who do not use them.',()=>['XblAuthManager','XblGameSave','XboxNetApiSvc','XboxGipSvc'].map(n=>HK(SVC+n,'Start',D,4)))]}
 ]};
-tabs.splice(tabs.indexOf(tApps),0,tDebloat);
+/* the Windows apps tab is merged into Debloat so one tab owns every option its level controls */
+tDebloat.groups.push(...tApps.groups);
+tabs.splice(tabs.indexOf(tApps),1,tDebloat);
 
-/* levels: lists of option ids (they point at toggles in this tab and in the other tabs) */
+/* levels: lists of option ids; only ids that live in the Debloat tab are kept (see the filter below) */
 const AX=n=>'ax_'+n,CP=n=>'cap_'+n,OF=n=>'of_'+n;
 const uniq=a=>[...new Set(a)];
 const LEV={};
@@ -417,18 +419,98 @@ LEV.ult=uniq(LEV.rec.concat(
 const LEVELS=[
  {id:'none',name:'None',desc:'Keep everything that ships with Windows.'},
  {id:'min',name:'Minimal',desc:'Safe cleanup: ads, sponsored apps and a few unused built-ins. Nothing useful is lost.'},
- {id:'rec',name:'Recommended',desc:'Removes most pre-installed extras (Copilot, Phone Link, Maps, OneDrive…) and turns off ads and AI nags. Keeps the Store, Photos, Calculator, Notepad and Terminal.'},
+ {id:'rec',name:'Recommended',desc:'Removes most pre-installed extras (Copilot, Phone Link, Maps, OneDrive…) and quiets Edge. Keeps the Store, Photos, Calculator, Notepad and Terminal.'},
  {id:'ult',name:'ULTIMATE',desc:'Maximum cleanup: also removes Xbox, Camera, Media Player, Sticky Notes, telemetry tasks and extra services. Some features stop working.'}
 ];
 
-/* the "Recommended" button of the Windows apps and Debloat tabs follows the Recommended level */
+/* a level may only touch options of the Debloat tab: drop ids that belong to other tabs */
 {
- const ids=t=>new Set(t.groups.flatMap(g=>g.opts).map(o=>o.id));
- const a=ids(tApps),d=ids(tDebloat);
- REC.apps={on:LEV.rec.filter(id=>a.has(id))};
- REC.debloat={on:LEV.rec.filter(id=>d.has(id))};
+ const own=new Set(tDebloat.groups.flatMap(g=>g.opts).map(o=>o.id));
+ for(const k of Object.keys(LEV))LEV[k]=LEV[k].filter(id=>own.has(id));
+ delete REC.apps;
+ REC.debloat={on:LEV.rec.slice()};
  recAll.on.length=0;recAll.set={};
  for(const[k,r]of Object.entries(REC)){if(k==='windows'||k==='conta')continue;recAll.on.push(...(r.on||[]));Object.assign(recAll.set,r.set||{})}
+}
+/* ---------- Windows services tab: modes Default / Performance / Gaming ---------- */
+/* [id, label, description, [service names], tier]  tier: 'perf' (Performance and Gaming) or 'game' (Gaming only) */
+const SVCS=[
+ ['sv_diag','Diagnostics and telemetry (DiagTrack, WAP push)','Connected User Experiences and Telemetry, dmwappushservice.',['DiagTrack','dmwappushservice'],'perf'],
+ ['sv_dx','Diagnostic hub and error reporting','Diagnostics Hub collector and Windows Error Reporting.',['diagnosticshub.standardcollector.service','WerSvc'],'perf'],
+ ['sv_fax','Fax','Not used by almost anyone.',['Fax'],'perf'],
+ ['sv_demo','Retail Demo and Downloaded Maps','RetailDemo, MapsBroker.',['RetailDemo','MapsBroker'],'perf'],
+ ['sv_remote','Remote registry and remote access','RemoteRegistry, RemoteAccess (routing and remote access).',['RemoteRegistry','RemoteAccess'],'perf'],
+ ['sv_parental','Parental controls and payments (NFC)','WpcMonSvc, SEMgrSvc.',['WpcMonSvc','SEMgrSvc'],'perf'],
+ ['sv_phone','Phone and mobile services','PhoneSvc, SmsRouter, icssvc (mobile hotspot).',['PhoneSvc','SmsRouter','icssvc'],'perf'],
+ ['sv_insider','Windows Insider and Wi-Fi Direct','wisvc, WFDSConMgrSvc, lltdsvc (link-layer topology).',['wisvc','WFDSConMgrSvc','lltdsvc'],'perf'],
+ ['sv_wmp','Media Player network sharing','WMPNetworkSvc.',['WMPNetworkSvc'],'perf'],
+ ['sv_scard','Smart cards','SCardSvr, ScDeviceEnum, CertPropSvc. Disable only if you never use smart cards.',['SCardSvr','ScDeviceEnum','CertPropSvc'],'perf'],
+ ['sv_geo','Geolocation','lfsvc. Maps and weather lose automatic location.',['lfsvc'],'perf'],
+ ['sv_xbox','Xbox services','XblAuthManager, XblGameSave, XboxNetApiSvc, XboxGipSvc. Breaks Game Pass, Xbox sign-in and cloud saves of Xbox titles.',['XblAuthManager','XblGameSave','XboxNetApiSvc','XboxGipSvc'],'game'],
+ ['sv_print','Printing','Spooler, PrintNotify. You will not be able to print.',['Spooler','PrintNotify'],'game'],
+ ['sv_rdp','Remote Desktop host','TermService, SessionEnv, UmRdpService.',['TermService','SessionEnv','UmRdpService'],'game'],
+ ['sv_share','File and printer sharing (server)','LanmanServer, Netlogon. Other PCs cannot reach your shares.',['LanmanServer','Netlogon'],'game'],
+ ['sv_disco','Network discovery','SSDPSRV, upnphost, FDResPub, fdPHost. The PC stops appearing in the network list.',['SSDPSRV','upnphost','FDResPub','fdPHost'],'game'],
+ ['sv_bio','Windows Hello biometrics','WbioSrvc. Fingerprint and face sign-in stop working.',['WbioSrvc'],'game'],
+ ['sv_doSvc','Delivery Optimization','DoSvc. Updates and Store downloads come only from Microsoft.',['DoSvc'],'game'],
+ ['sv_sensor','Sensors','SensrSvc, SensorService, SensorDataService.',['SensrSvc','SensorService','SensorDataService'],'game'],
+ ['sv_scan','Scanners and cameras (WIA)','StiSvc.',['StiSvc'],'game'],
+ ['sv_hv','Hyper-V guest services','vmicguestinterface, vmicheartbeat, vmickvpexchange, vmicrdv, vmicshutdown, vmictimesync, vmicvmsession, vmicvss.',['vmicguestinterface','vmicheartbeat','vmickvpexchange','vmicrdv','vmicshutdown','vmictimesync','vmicvmsession','vmicvss'],'game'],
+ ['sv_misc','Other rarely used services','AJRouter, TapiSrv, workfolderssvc, WinRM, Wecsvc, CscService, NaturalAuthentication.',['AJRouter','TapiSrv','workfolderssvc','WinRM','Wecsvc','CscService','NaturalAuthentication'],'game'],
+ ['sv_sync','Sync Host and Connected Devices Platform','CDPSvc. Nearby sharing and Timeline stop working.',['CDPSvc'],'game']
+];
+const SVC_PS=names=>"foreach ($n in "+names.map(n=>"'"+n+"'").join(',')+") { $k = \"HKLM:\\SYSTEM\\CurrentControlSet\\Services\\$n\"; if (Test-Path $k) { Set-ItemProperty -Path $k -Name Start -Value 4 -Type DWord } }";
+const tServ={id:'servicos',title:'Windows services',groups:[
+ {title:'Safe to disable (Performance and Gaming)',gd:'Services that most PCs never use. Disabling them frees RAM and a little CPU. Each service can be re-enabled later.',
+  opts:SVCS.filter(s=>s[4]==='perf').map(([id,l,d,n])=>T(id,l,d,()=>[PS(SVC_PS(n))]))},
+ {title:'Gaming extras (Gaming only)',gd:'Aggressive: these features stop working. Pick this only for a PC used mainly to play.',
+  opts:SVCS.filter(s=>s[4]==='game').map(([id,l,d,n])=>T(id,l,d,()=>[PS(SVC_PS(n))]))}
+]};
+tabs.splice(tabs.indexOf(tSoft),0,tServ);
+const SVL={perf:SVCS.filter(s=>s[4]==='perf').map(s=>s[0])};
+SVL.game=SVL.perf.concat(SVCS.filter(s=>s[4]==='game').map(s=>s[0]));
+const SVMODES=[
+ {id:'default',name:'Default',desc:'Leave every service as Windows ships it.'},
+ {id:'perf',name:'Performance',desc:'Disables services the system does not use (telemetry, fax, remote registry, phone, geolocation…). Frees RAM with no visible loss for most people.'},
+ {id:'game',name:'Gaming',desc:'Extreme: also disables printing, Xbox, Remote Desktop, file sharing, network discovery, biometrics and more. Minimum Windows overhead, everything left for games.'}
+];
+/* Recommended on this tab = Performance; the Gaming preset also uses the Gaming mode */
+REC.servicos={on:SVL.perf.slice()};
+/* header "Gaming" button: ultimate gaming setup across all tabs */
+PRESETS.gam.on=uniq([].concat(
+ ['telem','adId','errRep','activity','consumer','widgets','web','copilot','recall'],
+ ['hags','gmode','dvr','xbar','mm','mouse','prio','visfx','bgapps','sysmain','wsearch'],
+ ['hiber','fast','usbss'],['noReboot','noDrv'],['tips','lockTips','welcome','toast','bootSnd'],
+ ['tbWid','tbChat','tbCop','stIris','stWeb'],
+ LEV.ult,SVL.game));
+PRESETS.gam.set={plan:'ultimate',theme:'dark',monAc:'0',stdAc:'0'};
+recAll.on.push(...SVL.perf);
+function svcMode(){
+ const act=SVL.game.filter(id=>S[id]===true);
+ if(!act.length)return 'default';
+ for(const m of ['perf','game'])if(SVL[m].length===act.length&&SVL[m].every(id=>S[id]===true))return m;
+ return 'custom';
+}
+function applyMode(m){
+ for(const id of SVL.game)S[id]=false;
+ if(m!=='default')for(const id of SVL[m])S[id]=true;
+ save();refresh();
+}
+function svcCards(){
+ const cur=svcMode(),act=SVL.game.filter(id=>S[id]===true);
+ const row=el('div',{class:'levels',role:'group','aria-label':tr('Service mode')});
+ for(const M of SVMODES){
+  const sel=cur===M.id,n=M.id==='default'?0:SVL[M.id].length;
+  row.append(el('button',{class:'level'+(M.id==='game'?' ult':'')+(sel?' sel':''),'aria-pressed':String(sel),onclick:()=>applyMode(M.id)},
+   el('span',{class:'lh'},el('b',{text:tr(M.name)}),sel?el('span',{class:'chk',text:'✓ '+tr('Selected')}):null),
+   el('span',{class:'cnt',text:n+' '+tr('items')}),
+   el('small',{text:tr(M.desc)})));
+ }
+ const box=el('section',{class:'card'},el('h2',{text:tr('Service mode')}),
+  el('p',{class:'gd',text:tr('Choose a profile for Windows services. Every service stays adjustable below.')}),row);
+ if(cur==='custom')box.append(el('p',{class:'hint',text:tr('Custom selection')+' · '+act.length+' '+tr('items')}));
+ if(cur==='game')box.append(el('p',{class:'warn',text:tr('Gaming mode disables printing, Xbox, Remote Desktop, file sharing and more. Test in a virtual machine first.')}));
+ return box;
 }
 /* ---------- Portuguese (pt-PT): keys are the English (US) source strings ---------- */
 const DICTS={};
@@ -440,7 +522,7 @@ const PT={
  "An answer file can erase disks and create accounts. Test in a virtual machine first. Use at your own risk.":"Um ficheiro de resposta pode apagar discos e configurar contas. Teste primeiro numa máquina virtual. Use por sua conta e risco.",
  "Recommended":"Recomendado",
  "Applies a balanced selection of optimizations":"Aplica uma seleção equilibrada de otimizações",
- "Focused on performance and gaming":"Foco em desempenho e jogos",
+ "Ultimate gaming setup on every tab: performance tweaks, Ultimate power plan, ULTIMATE debloat and Gaming services":"Configuração de jogos máxima em todos os separadores: desempenho, plano de energia Ultimate, limpeza ULTIMATE e serviços no modo Jogos",
  "Clear tweaks":"Limpar tweaks",
  "Unchecks all tweaks":"Desmarca todos os tweaks",
  "Import config":"Importar config",
@@ -747,9 +829,9 @@ Object.assign(PT,{
  "Minimal":"Mínimo",
  "Keep everything that ships with Windows.":"Mantém tudo o que vem com o Windows.",
  "Safe cleanup: ads, sponsored apps and a few unused built-ins. Nothing useful is lost.":"Limpeza segura: anúncios, apps patrocinadas e algumas apps incluídas que ninguém usa. Não perde nada de útil.",
- "Removes most pre-installed extras (Copilot, Phone Link, Maps, OneDrive…) and turns off ads and AI nags. Keeps the Store, Photos, Calculator, Notepad and Terminal.":"Remove a maioria dos extras pré-instalados (Copilot, Ligação ao Telemóvel, Mapas, OneDrive…) e desativa anúncios e sugestões de IA. Mantém a Store, Fotografias, Calculadora, Bloco de Notas e Terminal.",
+ "Removes most pre-installed extras (Copilot, Phone Link, Maps, OneDrive…) and quiets Edge. Keeps the Store, Photos, Calculator, Notepad and Terminal.":"Remove a maioria dos extras pré-instalados (Copilot, Ligação ao Telemóvel, Mapas, OneDrive…) e silencia o Edge. Mantém a Store, Fotografias, Calculadora, Bloco de Notas e Terminal.",
  "Maximum cleanup: also removes Xbox, Camera, Media Player, Sticky Notes, telemetry tasks and extra services. Some features stop working.":"Limpeza máxima: remove também Xbox, Câmara, Media Player, Notas Autocolantes, tarefas de telemetria e serviços extra. Algumas funcionalidades deixam de funcionar.",
- "Pick how aggressive the cleanup should be. Every item stays adjustable in this tab and in \"Windows apps\".":"Escolha a agressividade da limpeza. Cada item continua ajustável neste separador e em «Apps do Windows».",
+ "Pick how aggressive the cleanup should be. Every item stays adjustable below.":"Escolha a agressividade da limpeza. Cada item continua ajustável abaixo.",
  "Custom selection":"Seleção personalizada",
  "Items in your current selection":"Itens da seleção atual",
  "Included in this level":"Incluído neste nível",
@@ -768,6 +850,61 @@ Object.assign(PT,{
  "Disable unused services (Retail Demo, Downloaded Maps Manager)":"Desativar serviços não usados (Demonstração para Retalho, Gestor de Mapas Transferidos)",
  "Disable Xbox services":"Desativar serviços Xbox",
  "Breaks Xbox, Game Pass and Xbox sign-in. Only for people who do not use them.":"Deixa de funcionar a Xbox, o Game Pass e o início de sessão Xbox. Só para quem não os usa."
+});
+Object.assign(PT,{
+ "Windows services":"Serviços do Windows",
+ "Safe to disable (Performance and Gaming)":"Seguros para desativar (Desempenho e Jogos)",
+ "Services that most PCs never use. Disabling them frees RAM and a little CPU. Each service can be re-enabled later.":"Serviços que a maioria dos PCs nunca usa. Desativá-los liberta RAM e um pouco de CPU. Cada serviço pode ser reativado mais tarde.",
+ "Gaming extras (Gaming only)":"Extras de jogos (só no modo Jogos)",
+ "Aggressive: these features stop working. Pick this only for a PC used mainly to play.":"Agressivo: estas funcionalidades deixam de funcionar. Escolha apenas para um PC usado sobretudo para jogar.",
+ "Diagnostics and telemetry (DiagTrack, WAP push)":"Diagnóstico e telemetria (DiagTrack, WAP push)",
+ "Connected User Experiences and Telemetry, dmwappushservice.":"Experiências de Utilizador Ligado e Telemetria, dmwappushservice.",
+ "Diagnostic hub and error reporting":"Hub de diagnóstico e relatório de erros",
+ "Diagnostics Hub collector and Windows Error Reporting.":"Recolha do Hub de Diagnóstico e Relatório de Erros do Windows.",
+ "Fax":"Fax",
+ "Not used by almost anyone.":"Quase ninguém usa.",
+ "Retail Demo and Downloaded Maps":"Demonstração para lojas e Mapas transferidos",
+ "Remote registry and remote access":"Registo remoto e acesso remoto",
+ "RemoteRegistry, RemoteAccess (routing and remote access).":"RemoteRegistry, RemoteAccess (encaminhamento e acesso remoto).",
+ "Parental controls and payments (NFC)":"Controlo parental e pagamentos (NFC)",
+ "Phone and mobile services":"Serviços de telefone e móveis",
+ "PhoneSvc, SmsRouter, icssvc (mobile hotspot).":"PhoneSvc, SmsRouter, icssvc (hotspot móvel).",
+ "Windows Insider and Wi-Fi Direct":"Windows Insider e Wi-Fi Direct",
+ "wisvc, WFDSConMgrSvc, lltdsvc (link-layer topology).":"wisvc, WFDSConMgrSvc, lltdsvc (topologia da camada de ligação).",
+ "Media Player network sharing":"Partilha em rede do Media Player",
+ "Smart cards":"Cartões inteligentes",
+ "SCardSvr, ScDeviceEnum, CertPropSvc. Disable only if you never use smart cards.":"SCardSvr, ScDeviceEnum, CertPropSvc. Desative só se nunca usar cartões inteligentes.",
+ "Geolocation":"Geolocalização",
+ "lfsvc. Maps and weather lose automatic location.":"lfsvc. Mapas e meteorologia perdem a localização automática.",
+ "Xbox services":"Serviços Xbox",
+ "XblAuthManager, XblGameSave, XboxNetApiSvc, XboxGipSvc. Breaks Game Pass, Xbox sign-in and cloud saves of Xbox titles.":"XblAuthManager, XblGameSave, XboxNetApiSvc, XboxGipSvc. Deixa de funcionar o Game Pass, o início de sessão Xbox e os jogos guardados na nuvem dos títulos Xbox.",
+ "Printing":"Impressão",
+ "Spooler, PrintNotify. You will not be able to print.":"Spooler, PrintNotify. Não vai conseguir imprimir.",
+ "Remote Desktop host":"Anfitrião de Ambiente de Trabalho Remoto",
+ "File and printer sharing (server)":"Partilha de ficheiros e impressoras (servidor)",
+ "LanmanServer, Netlogon. Other PCs cannot reach your shares.":"LanmanServer, Netlogon. Outros PCs não conseguem aceder às suas partilhas.",
+ "Network discovery":"Deteção de rede",
+ "SSDPSRV, upnphost, FDResPub, fdPHost. The PC stops appearing in the network list.":"SSDPSRV, upnphost, FDResPub, fdPHost. O PC deixa de aparecer na lista de rede.",
+ "Windows Hello biometrics":"Biometria do Windows Hello",
+ "WbioSrvc. Fingerprint and face sign-in stop working.":"WbioSrvc. O início de sessão por impressão digital e rosto deixa de funcionar.",
+ "Delivery Optimization":"Otimização da Entrega",
+ "DoSvc. Updates and Store downloads come only from Microsoft.":"DoSvc. As atualizações e transferências da Store vêm apenas da Microsoft.",
+ "Sensors":"Sensores",
+ "Scanners and cameras (WIA)":"Scanners e câmaras (WIA)",
+ "Hyper-V guest services":"Serviços de convidado Hyper-V",
+ "Other rarely used services":"Outros serviços raramente usados",
+ "AJRouter, TapiSrv, workfolderssvc, WinRM, Wecsvc, CscService, NaturalAuthentication.":"AJRouter, TapiSrv, workfolderssvc, WinRM, Wecsvc, CscService, NaturalAuthentication.",
+ "Sync Host and Connected Devices Platform":"Sync Host e Plataforma de Dispositivos Ligados",
+ "CDPSvc. Nearby sharing and Timeline stop working.":"CDPSvc. A partilha por proximidade e a Cronologia deixam de funcionar.",
+ "Performance":"Desempenho",
+ "Gaming":"Jogos",
+ "Leave every service as Windows ships it.":"Deixa todos os serviços como o Windows os traz.",
+ "Disables services the system does not use (telemetry, fax, remote registry, phone, geolocation…). Frees RAM with no visible loss for most people.":"Desativa serviços que o sistema não usa (telemetria, fax, registo remoto, telefone, geolocalização…). Liberta RAM sem perda visível para a maioria das pessoas.",
+ "Extreme: also disables printing, Xbox, Remote Desktop, file sharing, network discovery, biometrics and more. Minimum Windows overhead, everything left for games.":"Extremo: desativa também impressão, Xbox, Ambiente de Trabalho Remoto, partilha de ficheiros, deteção de rede, biometria e mais. Mínimo de recursos do Windows, tudo para os jogos.",
+ "Service mode":"Modo de serviços",
+ "Choose a profile for Windows services. Every service stays adjustable below.":"Escolha um perfil para os serviços do Windows. Cada serviço continua ajustável abaixo.",
+ "Gaming mode disables printing, Xbox, Remote Desktop, file sharing and more. Test in a virtual machine first.":"O modo Jogos desativa impressão, Xbox, Ambiente de Trabalho Remoto, partilha de ficheiros e mais. Teste primeiro numa máquina virtual.",
+ "Gaming service mode disables printing, Xbox, Remote Desktop, file sharing and more. Test in a virtual machine first.":"O modo de serviços Jogos desativa impressão, Xbox, Ambiente de Trabalho Remoto, partilha de ficheiros e mais. Teste primeiro numa máquina virtual.",
 });
 DICTS.pt=PT;
 /* ---------- state ---------- */
@@ -800,7 +937,7 @@ function el(tag,a={},...kids){
  for(const c of kids.flat())if(c!=null)e.append(c);
  return e;
 }
-const ICONS={windows:'🪟',conta:'👤',privacidade:'🔒',performance:'⚡',energia:'🔋',atualizacoes:'🔄',notificacoes:'🔔',tema:'🎨',barra:'📌',iniciar:'🧭',explorador:'📁',apps:'🧩',software:'📦',debloat:'🧹',gerar:'📄'};
+const ICONS={windows:'🪟',conta:'👤',privacidade:'🔒',performance:'⚡',energia:'🔋',atualizacoes:'🔄',notificacoes:'🔔',tema:'🎨',barra:'📌',iniciar:'🧭',explorador:'📁',software:'📦',debloat:'🧹',servicos:'⚙️',gerar:'📄'};
 function tabKey(e){
  const k=e.key;if(k!=='ArrowLeft'&&k!=='ArrowRight'&&k!=='Home'&&k!=='End')return;
  e.preventDefault();
@@ -820,17 +957,21 @@ function renderTabs(scroll){
  if(scroll&&b&&b.scrollIntoView)b.scrollIntoView({inline:'center',block:'nearest'});
 }
 /* recommended / reset per tab */
+const tabIds=t=>new Set(t.groups.flatMap(g=>g.opts).map(o=>o.id));
 function applyTab(t,rec){
  if(t.id==='debloat'){applyLevel(rec?'rec':'none');return}
+ if(t.id==='servicos'){applyMode(rec?'perf':'default');return}
+ const own=tabIds(t);
  for(const g of t.groups)for(const o of g.opts){
   if(o.type==='button')continue;
   if(!rec||tweakOpt(o))S[o.id]=o.def;
  }
- if(rec){const r=REC[t.id]||{};for(const id of r.on||[])if(id in S)S[id]=true;for(const id of r.off||[])if(id in S)S[id]=false;Object.assign(S,r.set||{})}
+ if(rec){const r=REC[t.id]||{};for(const id of r.on||[])if(own.has(id))S[id]=true;for(const id of r.off||[])if(own.has(id))S[id]=false;for(const[k,v]of Object.entries(r.set||{}))if(own.has(k))S[k]=v}
  save();refresh();
 }
 function isRec(t){
  if(t.id==='debloat')return curLevel()==='rec';
+ if(t.id==='servicos')return svcMode()==='perf';
  const r=REC[t.id];if(!r)return false;
  return (r.on||[]).every(id=>S[id]===true)&&(r.off||[]).every(id=>S[id]===false)&&Object.entries(r.set||{}).every(([k,v])=>S[k]===v);
 }
@@ -860,7 +1001,7 @@ function levelCards(){
  const list=cur==='custom'||cur==='none'?act:LEV[cur].filter(id=>id in S);
  const names=list.map(id=>tr(byId(id).label));
  const box=el('section',{class:'card'},el('h2',{text:tr('Debloat level')}),
-  el('p',{class:'gd',text:tr('Pick how aggressive the cleanup should be. Every item stays adjustable in this tab and in "Windows apps".')}),row);
+  el('p',{class:'gd',text:tr('Pick how aggressive the cleanup should be. Every item stays adjustable below.')}),row);
  if(cur==='custom')box.append(el('p',{class:'hint',text:tr('Custom selection')+' · '+act.length+' '+tr('items')}));
  if(cur==='ult')box.append(el('p',{class:'warn',text:tr('ULTIMATE removes apps and services that some features rely on (Xbox, Camera, Media Player…). Test in a virtual machine first.')}));
  if(names.length)box.append(el('details',{},el('summary',{text:(cur==='custom'?tr('Items in your current selection'):tr('Included in this level'))+' ('+names.length+')'}),el('p',{class:'hint',text:names.join(' · ')})));
@@ -905,6 +1046,7 @@ function renderPanel(){
  const t=tabs.find(x=>x.id===cur);
  p.append(panelHead(t));
  if(t.id==='debloat')p.append(levelCards());
+ if(t.id==='servicos')p.append(svcCards());
  if(t.id==='gerar')return renderGen(p);
  for(const g of t.groups){
   const opts=g.opts.filter(o=>!o.show||o.show(S));
@@ -1074,6 +1216,7 @@ function build(){
  const ext=files.length?['<Extensions xmlns="urn:wintweaks:extensions">',...files.map(([n,t])=>`  <File path="C:\\ProgramData\\WinTweaks\\${n}"><![CDATA[${t}]]></File>`),'</Extensions>']:[];
 
  if(curLevel()==='ult')notes.push(['w','ULTIMATE removes apps and services that some features rely on (Xbox, Camera, Media Player…). Test in a virtual machine first.']);
+ if(svcMode()==='game')notes.push(['w','Gaming service mode disables printing, Xbox, Remote Desktop, file sharing and more. Test in a virtual machine first.']);
  if(S.wuMode==='off')notes.push(['w','Automatic updates will be disabled: the PC will stop receiving security fixes until you re-enable them.']);
  if(c.reg.some(r=>r.h==='HKLM'&&r.p.startsWith('SOFTWARE\\Policies')))notes.push(['i','Some settings are applied through policy; Windows may show "Some settings are managed by your organization".']);
  if(S.nro)notes.push(['i','On recent Windows 11 builds BypassNRO may be ignored; creating the local account here avoids the problem.']);
