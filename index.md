@@ -11,6 +11,7 @@ Create a Windows 10/11 `autounattend.xml` answer file by picking options in tabs
 
 - **Windows setup:** language, keyboard, time zone, edition and product key, Windows 11 hardware-check bypasses, optional automatic disk partitioning, network disabled during setup, OOBE screens.
 - **User account:** automatic local account, computer name, one-time auto-logon.
+- **Network:** connect to Wi-Fi automatically, static or automatic IP on wired adapters, DNS servers, Private network profile, Remote Desktop.
 - **Optimize:** privacy and security, performance and gaming, power, updates, notifications and sound.
 - **Customize:** theme, taskbar, Start menu, File Explorer.
 - **Debloat:** one-click levels (Minimal, Recommended, ULTIMATE) for removing bloatware, with every item adjustable.

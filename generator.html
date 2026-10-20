@@ -175,6 +175,36 @@ const tConta={id:'conta',title:'User account',groups:[
  {title:'Scope of customizations',opts:[
   SEL('scope','Apply per-user tweaks (theme, taskbar, Explorer…)','"Default profile" applies to all new users. "First user only" runs at the first sign-in.',[['default','All new users (Default profile)'],['first','First user only']],'default')]}
 ]};
+/* ---------- Network (Wi-Fi, wired, DNS) ---------- */
+const WIFI_AUTH=[['wpa2','WPA2-Personal (AES)'],['wpa3','WPA3-Personal (SAE)'],['open','Open (no password)']];
+const DNSOPT=[NOCH,['cloudflare','Cloudflare (1.1.1.1)'],['google','Google (8.8.8.8)'],['quad9','Quad9 (9.9.9.9)'],['custom','Custom…']];
+const wifiShow=s=>s.wifiOn;
+const wifiKeyShow=s=>s.wifiOn&&s.wifiAuth!=='open';
+const ipShow=s=>s.ipMode==='static';
+const tRede={id:'rede',title:'Network',groups:[
+ {title:'Wi-Fi',gd:'Saves a Wi-Fi profile and connects at first sign-in (adapters are re-enabled first when "Disable the network during setup" is on). The Software (winget) tab needs this or a cable.',opts:[
+  T('wifiOn','Connect to a Wi-Fi network automatically','Needs a Wi-Fi adapter and an administrator account.',null,false),
+  TXT('wifiSsid','Network name (SSID)',null,'',{show:wifiShow}),
+  SEL('wifiAuth','Security','Routers in WPA2/WPA3 mixed mode work with WPA2.',WIFI_AUTH,'wpa2',null,{show:wifiShow}),
+  TXT('wifiPass','Wi-Fi password','Stored in plain text in the XML (8 to 63 characters).','',{show:wifiKeyShow,pw:true}),
+  T('wifiAuto','Connect automatically when in range',null,null,true,{show:wifiShow}),
+  T('wifiHidden','Hidden network (SSID not broadcast)',null,null,false,{show:wifiShow}),
+  T('wifiClean','Remove the password from the scripts after use','Overwrites it in firstlogon.ps1 and in C:\\Windows\\Panther once the profile is saved. The XML on your USB drive keeps it.',null,true,{show:wifiKeyShow})]},
+ {title:'Wired (Ethernet)',gd:'Applied at first sign-in to wired adapters.',opts:[
+  SEL('ipMode','IPv4 address',null,[['dhcp','Automatic (DHCP)'],['static','Static address']],'dhcp'),
+  TXT('ethName','Only adapters whose name contains','Empty = all wired adapters. Recommended with a static address, so that two adapters do not get the same IP.','',{show:ipShow}),
+  TXT('ipAddr','IP address','For example 192.168.1.50','',{show:ipShow}),
+  TXT('ipPrefix','Subnet prefix length','24 = 255.255.255.0','24',{show:ipShow}),
+  TXT('ipGw','Default gateway','Leave empty for none.','',{show:ipShow})]},
+ {title:'DNS',opts:[
+  SEL('dnsMode','DNS servers','Applied to every physical adapter (wired and Wi-Fi). Required with a static address.',DNSOPT,''),
+  TXT('dnsPri','Primary DNS',null,'',{show:s=>s.dnsMode==='custom'}),
+  TXT('dnsSec','Secondary DNS (optional)',null,'',{show:s=>s.dnsMode==='custom'})]},
+ {title:'Network options',opts:[
+  T('netPriv','Set the connected network to Private','Makes the PC discoverable on the local network (file and printer sharing).',null,false),
+  T('noIpv6','Disable IPv6 on physical adapters','Microsoft recommends leaving IPv6 on; a few programs depend on it.',null,false),
+  T('rdp','Enable Remote Desktop','Pro, Enterprise and Education only. Opens the Remote Desktop firewall rules and requires Network Level Authentication.',null,false)]}
+]};
 /* ---------- Privacy and security ---------- */
 const P='SOFTWARE\\Policies\\Microsoft\\Windows\\';
 const CV='Software\\Microsoft\\Windows\\CurrentVersion\\';
@@ -395,6 +425,7 @@ const tDebloat={id:'debloat',title:'Debloat',groups:[
   T('svcXbox','Disable Xbox services','Breaks Xbox, Game Pass and Xbox sign-in. Only for people who do not use them.',()=>['XblAuthManager','XblGameSave','XboxNetApiSvc','XboxGipSvc'].map(n=>HK(SVC+n,'Start',D,4)))]}
 ]};
 tabs.splice(tabs.indexOf(tApps),0,tDebloat);
+tabs.splice(tabs.indexOf(tConta)+1,0,tRede);
 
 /* levels: lists of option ids (they point at toggles in this tab and in the other tabs) */
 const AX=n=>'ax_'+n,CP=n=>'cap_'+n,OF=n=>'of_'+n;
@@ -769,6 +800,59 @@ Object.assign(PT,{
  "Disable Xbox services":"Desativar serviços Xbox",
  "Breaks Xbox, Game Pass and Xbox sign-in. Only for people who do not use them.":"Deixa de funcionar a Xbox, o Game Pass e o início de sessão Xbox. Só para quem não os usa."
 });
+Object.assign(PT,{
+"Network":"Rede",
+"Wi-Fi":"Wi-Fi",
+"Saves a Wi-Fi profile and connects at first sign-in (adapters are re-enabled first when \"Disable the network during setup\" is on). The Software (winget) tab needs this or a cable.":"Guarda um perfil Wi-Fi e liga-se no primeiro início de sessão (os adaptadores são reativados antes se «Desligar a rede durante a instalação» estiver ativo). O separador Software (winget) precisa disto ou de cabo.",
+"Connect to a Wi-Fi network automatically":"Ligar automaticamente a uma rede Wi-Fi",
+"Needs a Wi-Fi adapter and an administrator account.":"Requer adaptador Wi-Fi e conta de administrador.",
+"Network name (SSID)":"Nome da rede (SSID)",
+"Security":"Segurança",
+"Routers in WPA2/WPA3 mixed mode work with WPA2.":"Routers em modo misto WPA2/WPA3 funcionam com WPA2.",
+"WPA2-Personal (AES)":"WPA2-Pessoal (AES)",
+"WPA3-Personal (SAE)":"WPA3-Pessoal (SAE)",
+"Open (no password)":"Aberta (sem palavra-passe)",
+"Wi-Fi password":"Palavra-passe do Wi-Fi",
+"Stored in plain text in the XML (8 to 63 characters).":"Fica em texto simples no XML (8 a 63 caracteres).",
+"Connect automatically when in range":"Ligar automaticamente quando estiver ao alcance",
+"Hidden network (SSID not broadcast)":"Rede oculta (SSID não difundido)",
+"Remove the password from the scripts after use":"Remover a palavra-passe dos scripts depois de usada",
+"Overwrites it in firstlogon.ps1 and in C:\\Windows\\Panther once the profile is saved. The XML on your USB drive keeps it.":"Apaga-a em firstlogon.ps1 e em C:\\Windows\\Panther depois de guardar o perfil. O XML no seu pendrive mantém-na.",
+"Wired (Ethernet)":"Cabo (Ethernet)",
+"Applied at first sign-in to wired adapters.":"Aplicado no primeiro início de sessão aos adaptadores de cabo.",
+"IPv4 address":"Endereço IPv4",
+"Automatic (DHCP)":"Automático (DHCP)",
+"Static address":"Endereço fixo",
+"Only adapters whose name contains":"Só adaptadores cujo nome contém",
+"Empty = all wired adapters. Recommended with a static address, so that two adapters do not get the same IP.":"Vazio = todos os adaptadores de cabo. Recomendado com endereço fixo, para dois adaptadores não ficarem com o mesmo IP.",
+"IP address":"Endereço IP",
+"For example 192.168.1.50":"Por exemplo 192.168.1.50",
+"Subnet prefix length":"Comprimento do prefixo da máscara",
+"24 = 255.255.255.0":"24 = 255.255.255.0",
+"Default gateway":"Gateway predefinido",
+"Leave empty for none.":"Deixe vazio para nenhum.",
+"DNS":"DNS",
+"DNS servers":"Servidores DNS",
+"Applied to every physical adapter (wired and Wi-Fi). Required with a static address.":"Aplicado a todos os adaptadores físicos (cabo e Wi-Fi). Necessário com endereço fixo.",
+"Custom…":"Personalizado…",
+"Primary DNS":"DNS primário",
+"Secondary DNS (optional)":"DNS secundário (opcional)",
+"Network options":"Opções de rede",
+"Set the connected network to Private":"Definir a rede ligada como Privada",
+"Makes the PC discoverable on the local network (file and printer sharing).":"Torna o PC visível na rede local (partilha de ficheiros e impressoras).",
+"Disable IPv6 on physical adapters":"Desativar IPv6 nos adaptadores físicos",
+"Microsoft recommends leaving IPv6 on; a few programs depend on it.":"A Microsoft recomenda manter o IPv6 ativo; alguns programas dependem dele.",
+"Enable Remote Desktop":"Ativar Ambiente de Trabalho Remoto",
+"Pro, Enterprise and Education only. Opens the Remote Desktop firewall rules and requires Network Level Authentication.":"Só Pro, Enterprise e Education. Abre as regras da firewall do Ambiente de Trabalho Remoto e exige autenticação ao nível da rede (NLA).",
+"Wi-Fi is enabled but the network name is empty: the Wi-Fi profile will not be created.":"O Wi-Fi está ativo mas o nome da rede está vazio: o perfil Wi-Fi não será criado.",
+"The Wi-Fi network name can have at most 32 characters.":"O nome da rede Wi-Fi pode ter no máximo 32 caracteres.",
+"The Wi-Fi password must have 8 to 63 characters: the Wi-Fi profile will not be created.":"A palavra-passe do Wi-Fi tem de ter 8 a 63 caracteres: o perfil Wi-Fi não será criado.",
+"The Wi-Fi password is stored in plain text in the XML. Do not share the file or upload it to GitHub.":"A palavra-passe do Wi-Fi fica em texto simples no XML. Não partilhe o ficheiro nem o envie para o GitHub.",
+"Invalid static IP settings: the address and gateway must be valid IPv4 and the prefix between 0 and 32. They will not be applied.":"Definições de IP fixo inválidas: o endereço e o gateway têm de ser IPv4 válidos e o prefixo entre 0 e 32. Não serão aplicadas.",
+"Static address without DNS servers: choose DNS servers in the Network tab or name resolution will not work.":"Endereço fixo sem servidores DNS: escolha servidores DNS no separador Rede, senão a resolução de nomes não funciona.",
+"Invalid custom DNS servers: they will not be applied.":"Servidores DNS personalizados inválidos: não serão aplicados.",
+"Network settings are applied at first sign-in and need an administrator account.":"As definições de rede são aplicadas no primeiro início de sessão e precisam de uma conta de administrador."
+});
 DICTS.pt=PT;
 /* ---------- state ---------- */
 let S={},cur='windows';
@@ -800,7 +884,7 @@ function el(tag,a={},...kids){
  for(const c of kids.flat())if(c!=null)e.append(c);
  return e;
 }
-const ICONS={windows:'🪟',conta:'👤',privacidade:'🔒',performance:'⚡',energia:'🔋',atualizacoes:'🔄',notificacoes:'🔔',tema:'🎨',barra:'📌',iniciar:'🧭',explorador:'📁',apps:'🧩',software:'📦',debloat:'🧹',gerar:'📄'};
+const ICONS={windows:'🪟',conta:'👤',rede:'🌐',privacidade:'🔒',performance:'⚡',energia:'🔋',atualizacoes:'🔄',notificacoes:'🔔',tema:'🎨',barra:'📌',iniciar:'🧭',explorador:'📁',apps:'🧩',software:'📦',debloat:'🧹',gerar:'📄'};
 function tabKey(e){
  const k=e.key;if(k!=='ArrowLeft'&&k!=='ArrowRight'&&k!=='Home'&&k!=='End')return;
  e.preventDefault();
@@ -940,6 +1024,68 @@ const KEYS={pro:'VK7JG-NPHTM-C97JM-9MPGT-3V66T',home:'YTMG3-N6DKC-DKB77-7M9GH-8H
 const EXTRACT='powershell -NoProfile -Command "$x=[xml](gc C:\\Windows\\Panther\\unattend.xml -Raw);foreach($f in $x.unattend.Extensions.File){md (Split-Path $f.path) -Force|Out-Null;sc $f.path $f.InnerText -Encoding UTF8}"';
 const wgIds=()=>S.wg.split(/\r?\n/).map(s=>s.trim()).filter(s=>/^[A-Za-z0-9._+-]+$/.test(s));
 
+/* ---------- network: commands for the first-logon script ---------- */
+const IPV4=/^(25[0-5]|2[0-4]\d|1?\d?\d)(\.(25[0-5]|2[0-4]\d|1?\d?\d)){3}$/;
+const DNSP={cloudflare:['1.1.1.1','1.0.0.1'],google:['8.8.8.8','8.8.4.4'],quad9:['9.9.9.9','149.112.112.112']};
+const dnsList=()=>S.dnsMode==='custom'?[S.dnsPri,S.dnsSec].filter(Boolean):(DNSP[S.dnsMode]||[]);
+const dnsOk=()=>{const l=dnsList();return l.length>0&&l.every(x=>IPV4.test(x))};
+const staticOk=()=>S.ipMode==='static'&&IPV4.test(S.ipAddr)&&/^(\d|[12]\d|3[0-2])$/.test(S.ipPrefix)&&(!S.ipGw||IPV4.test(S.ipGw));
+const wifiKeyOk=()=>S.wifiAuth==='open'||/^.{8,63}$/.test(S.wifiPass);
+const wifiReady=()=>!!(S.wifiOn&&S.wifiSsid&&S.wifiSsid.length<=32&&wifiKeyOk());
+function wifiXml(){
+ const open=S.wifiAuth==='open';
+ const auth=open?'open':S.wifiAuth==='wpa3'?'WPA3SAE':'WPA2PSK';
+ return ['<?xml version="1.0"?>','<WLANProfile xmlns="http://www.microsoft.com/networking/WLAN/profile/v1">',
+  `<name>${esc(S.wifiSsid)}</name>`,
+  `<SSIDConfig><SSID><name>${esc(S.wifiSsid)}</name></SSID><nonBroadcast>${S.wifiHidden?'true':'false'}</nonBroadcast></SSIDConfig>`,
+  '<connectionType>ESS</connectionType>',`<connectionMode>${S.wifiAuto?'auto':'manual'}</connectionMode>`,
+  '<MSM><security>',
+  `<authEncryption><authentication>${auth}</authentication><encryption>${open?'none':'AES'}</encryption><useOneX>false</useOneX></authEncryption>`,
+  ...(open?[]:[`<sharedKey><keyType>passPhrase</keyType><protected>false</protected><keyMaterial>${esc(S.wifiPass)}</keyMaterial></sharedKey>`]),
+  '</security></MSM>','</WLANProfile>'].join('\n');
+}
+function netFx(c){
+ const L=c.logon,q=psq;
+ if(wifiReady()){
+  L.push('# Wi-Fi profile',
+   "if (Get-Service WlanSvc -ErrorAction SilentlyContinue) {",
+   " for ($i = 0; $i -lt 20 -and (Get-Service WlanSvc).Status -ne 'Running'; $i++) { Start-Sleep 2 }",
+   " $wp = Join-Path $env:ProgramData 'WinTweaks\\wifi-profile.xml'",
+   " $wx = @'\n"+wifiXml()+"\n'@",
+   " Set-Content -LiteralPath $wp -Value $wx -Encoding UTF8",
+   ' netsh wlan add profile filename="$wp" user=all | Out-Null',
+   ' Remove-Item -LiteralPath $wp -Force');
+  if(S.wifiAuth!=='open'&&S.wifiClean)L.push(
+   " $m = [regex]::Match($wx, '<keyMaterial>.*?</keyMaterial>')",
+   " if ($m.Success) {",
+   "  $files = @($PSCommandPath) + @(Get-ChildItem 'C:\\Windows\\Panther' -Recurse -File -Filter 'unattend*.xml' | ForEach-Object { $_.FullName })",
+   "  foreach ($f in $files) { if ($f -and (Test-Path -LiteralPath $f)) { $t = [IO.File]::ReadAllText($f).Replace($m.Value, '<keyMaterial>********</keyMaterial>'); [IO.File]::WriteAllText($f, $t, (New-Object Text.UTF8Encoding $false)) } }",
+   " }");
+  L.push('}','');
+ }
+ if(staticOk()){
+  const nm=S.ethName?` -and $_.Name -like '*${q(S.ethName)}*'`:'';
+  L.push('# Wired: static IPv4',
+   `$wired = @(Get-NetAdapter -Physical | Where-Object { $_.MediaType -eq '802.3'${nm} })`,
+   'foreach ($a in $wired) {',
+   ' Set-NetIPInterface -InterfaceIndex $a.ifIndex -AddressFamily IPv4 -Dhcp Disabled',
+   ' Get-NetIPAddress -InterfaceIndex $a.ifIndex -AddressFamily IPv4 | Remove-NetIPAddress -Confirm:$false',
+   ' Remove-NetRoute -InterfaceIndex $a.ifIndex -AddressFamily IPv4 -Confirm:$false',
+   ` New-NetIPAddress -InterfaceIndex $a.ifIndex -AddressFamily IPv4 -IPAddress '${S.ipAddr}' -PrefixLength ${S.ipPrefix}${S.ipGw?` -DefaultGateway '${S.ipGw}'`:''} | Out-Null`,
+   '}','');
+ }
+ if(dnsOk())L.push('# DNS',`$dns = @(${dnsList().map(x=>"'"+x+"'").join(', ')})`,
+  'foreach ($a in Get-NetAdapter -Physical) { Set-DnsClientServerAddress -InterfaceIndex $a.ifIndex -ServerAddresses $dns }','');
+ if(S.noIpv6)L.push('# Disable IPv6','foreach ($a in Get-NetAdapter -Physical) { Disable-NetAdapterBinding -Name $a.Name -ComponentID ms_tcpip6 }','');
+ if(S.netPriv)L.push('# Private network profile',
+  'for ($i = 0; $i -lt 30 -and -not (Get-NetConnectionProfile); $i++) { Start-Sleep 2 }',
+  "Get-NetConnectionProfile | Where-Object { $_.NetworkCategory -eq 'Public' } | Set-NetConnectionProfile -NetworkCategory Private",'');
+ if(S.rdp){
+  const TS='SYSTEM\\CurrentControlSet\\Control\\Terminal Server';
+  c.reg.push(HK(TS,'fDenyTSConnections',D,0),HK(TS+'\\WinStations\\RDP-Tcp','UserAuthentication',D,1));
+  c.ps.push("Enable-NetFirewallRule -Group '@FirewallAPI.dll,-28752'");
+ }
+}
 function collect(){
  const c={reg:[],ps:[],logon:[],appx:[]};
  for(const o of allOpts()){
@@ -953,6 +1099,7 @@ function collect(){
    else (it.w==='sys'?c.ps:c.logon).push(it.l);
   }
  }
+ netFx(c);
  return c;
 }
 const regLine=(it,root)=>`reg add "${root}\\${it.p}" ${it.n===null?'/ve':'/v "'+it.n+'"'} /t ${it.t} /d ${it.t===Z?'"'+it.d+'"':it.d} /f | Out-Null`;
@@ -1073,6 +1220,19 @@ function build(){
  if(sc.hasLogon)files.push(['firstlogon.ps1',sc.logon]);
  const ext=files.length?['<Extensions xmlns="urn:wintweaks:extensions">',...files.map(([n,t])=>`  <File path="C:\\ProgramData\\WinTweaks\\${n}"><![CDATA[${t}]]></File>`),'</Extensions>']:[];
 
+ /* network notes */
+ if(S.wifiOn){
+  if(!S.wifiSsid)notes.push(['w','Wi-Fi is enabled but the network name is empty: the Wi-Fi profile will not be created.']);
+  else if(S.wifiSsid.length>32)notes.push(['w','The Wi-Fi network name can have at most 32 characters.']);
+  else if(!wifiKeyOk())notes.push(['w','The Wi-Fi password must have 8 to 63 characters: the Wi-Fi profile will not be created.']);
+  else if(S.wifiAuth!=='open')notes.push(['w','The Wi-Fi password is stored in plain text in the XML. Do not share the file or upload it to GitHub.']);
+ }
+ if(S.ipMode==='static'){
+  if(!staticOk())notes.push(['w','Invalid static IP settings: the address and gateway must be valid IPv4 and the prefix between 0 and 32. They will not be applied.']);
+  else if(!dnsOk())notes.push(['w','Static address without DNS servers: choose DNS servers in the Network tab or name resolution will not work.']);
+ }
+ if(S.dnsMode==='custom'&&!dnsOk())notes.push(['w','Invalid custom DNS servers: they will not be applied.']);
+ if(local&&S.accGroup==='Users'&&(wifiReady()||staticOk()||dnsOk()||S.noIpv6||S.netPriv))notes.push(['w','Network settings are applied at first sign-in and need an administrator account.']);
  if(curLevel()==='ult')notes.push(['w','ULTIMATE removes apps and services that some features rely on (Xbox, Camera, Media Player…). Test in a virtual machine first.']);
  if(S.wuMode==='off')notes.push(['w','Automatic updates will be disabled: the PC will stop receiving security fixes until you re-enable them.']);
  if(c.reg.some(r=>r.h==='HKLM'&&r.p.startsWith('SOFTWARE\\Policies')))notes.push(['i','Some settings are applied through policy; Windows may show "Some settings are managed by your organization".']);
