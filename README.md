@@ -19,7 +19,7 @@ Pick your settings in tabs (installation, user account, privacy, performance, po
 
 ## Usage
 
-1. Open the page (GitHub Pages link of this repository, or `index.html` locally in any modern browser).
+1. Open the generator page (`generator.html` on the GitHub Pages site of this repository, or open the file locally in any modern browser).
 2. Go through the tabs and choose your options.
 3. Open **Gerar XML** (Generate XML), check the warnings, then click **Descarregar autounattend.xml** (Download).
 4. Place `autounattend.xml` in the root of your Windows installation USB drive (next to `setup.exe`), or inject it into your ISO.
@@ -58,12 +58,24 @@ No build step is needed:
 ```
 git clone https://github.com/<your-user>/autounattend-generator.git
 cd autounattend-generator
-# open index.html in your browser
+# open generator.html in your browser
 ```
+
+To preview the themed landing page locally (optional): `bundle install && bundle exec jekyll serve`.
 
 ## Publish with GitHub Pages
 
-Repository **Settings → Pages → Build and deployment → Deploy from a branch → `main` / `/ (root)`**. The site will be available at `https://<your-user>.github.io/autounattend-generator/`.
+Repository **Settings → Pages → Build and deployment → Deploy from a branch → `main` / `/ (root)`**. The site uses the [Midnight](https://github.com/pages-themes/midnight) theme (`_config.yml`). The landing page is `index.md`, available at `https://<your-user>.github.io/autounattend-generator/`, and the generator itself is at `https://<your-user>.github.io/autounattend-generator/generator.html`.
+
+## Repository structure
+
+| File | Purpose |
+| --- | --- |
+| `index.md` | Themed landing page (Midnight) |
+| `generator.html` | The generator (single self-contained page) |
+| `_config.yml` | Jekyll and theme configuration |
+| `assets/css/style.scss` | Small style additions on top of the theme |
+| `Gemfile` | Optional, for local Jekyll preview |
 
 ## Contributing
 
