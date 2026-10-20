@@ -15,10 +15,10 @@ Pick your settings in tabs (installation, user account, network, privacy, perfor
 - **Theme, Taskbar, Start menu, File Explorer:** tweaks comparable to Winhance's *Customize* categories.
 - **Debloat:** choose a level (*None*, *Minimal*, *Recommended* or *ULTIMATE*) and every included item is selected for you; each item stays adjustable. Covers built-in and sponsored apps, optional Windows features, OneDrive, Edge nags and telemetry tasks. Edge itself is never uninstalled.
 - **Windows services:** choose a profile (*Default*, *Performance* or *Gaming*) and fine-tune each service. The *Gaming* profile also disables printing, Xbox, Remote Desktop, file sharing and more.
-- **Software (winget):** install packages on first logon from a list of winget IDs (import a `winget-apps.json` produced by `winget export`).
+- **Software (winget):** install packages on first logon from a list of winget IDs (import a `winget-apps.json` produced by `winget export`), plus an *Extra registry settings* box for your own registry tweaks.
 - **Languages:** a language menu in the top bar. The base language is English (US); Portuguese (Portugal) is included. More languages can be added with a small dictionary (see *Adding a language*).
 - **Presets, import/export:** a *Recommended* button on every tab (plus *Reset tab*), global *Recommended* and *Gaming* presets (the *Gaming* one sets up every tab for gaming); save and load your configuration as JSON.
-- **Import an existing `autounattend.xml`:** the *Import XML* button reads a file (from this generator or another tool), fills in every option it recognizes in the tabs and lists, in a report at the top of the page, the settings and script lines that this page does not support and that would be lost when you generate a new XML.
+- **Import an existing `autounattend.xml`:** the *Import XML* button reads a file (from this generator or another tool), fills in every option it recognizes in the tabs and lists, in a report at the top of the page, the settings and script lines that this page does not support and that would be lost when you generate a new XML. Files from other tools such as Winhance are supported: registry tweaks that match no option are kept in the *Extra registry settings* box (Software tab), and what cannot be converted (power plan, scheduled tasks, deletions of registry keys…) is summarised in the report.
 - **XML preview and validation** with warnings for risky choices, plus a view of the embedded scripts.
 
 ## Usage

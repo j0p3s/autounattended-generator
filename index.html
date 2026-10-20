@@ -137,6 +137,7 @@ function randName(){const c='ABCDEFGHJKLMNPQRSTUVWXYZ23456789',b=new Uint8Array(
 const tWin={id:'windows',title:'Windows',groups:[
  {title:'Language and region',opts:[
   SEL('lang','Windows language','Your ISO must include this language.',LANGS,'pt-PT',null,{raw:true}),
+  SEL('userLoc','Regional format','Dates, numbers and currency. Leave as is to follow the Windows language, or choose another one (e.g. English Windows with Portuguese dates).',[['','Same as Windows language'],...LANGS],''),
   SEL('kbd','Keyboard',null,KBDS,'0816:00000816'),
   SEL('tz','Time zone',null,TZS,'GMT Standard Time')]},
  {title:'Edition and license',opts:[
@@ -376,7 +377,9 @@ const tApps={id:'apps',title:'Windows apps',groups:[
 const WG=['Google.Chrome','Mozilla.Firefox','Brave.Brave','7zip.7zip','VideoLAN.VLC','Notepad++.Notepad++','Microsoft.VisualStudioCode','Git.Git','Discord.Discord','Valve.Steam','Spotify.Spotify','Microsoft.PowerToys','ShareX.ShareX','Adobe.Acrobat.Reader.64-bit','qBittorrent.qBittorrent','Microsoft.WindowsTerminal'];
 const tSoft={id:'software',title:'Software (winget)',groups:[
  {title:'Install at first sign-in',gd:'One winget ID per line (e.g. 7zip.7zip). Requires internet; the network is re-enabled first. You can import the winget-apps.json produced by Programas.cmd.',opts:[
-  {id:'wg',type:'textarea',label:'winget package IDs',desc:null,def:''}]}
+  {id:'wg',type:'textarea',label:'winget package IDs',desc:null,def:''}]},
+ {title:'Extra registry settings',gd:'Advanced. One setting per line: HIVE\\Path|Name|TYPE|Data. HIVE is HKLM or HKCU (HKCU follows the "per-user tweaks" scope in the User account tab). Use (Default) as the name for the default value. Imported files put here the registry settings that match no option of this page.',opts:[
+  {id:'xreg',type:'textarea',label:'Registry settings',desc:null,def:'',ph:'HKLM\\SOFTWARE\\Policies\\Microsoft\\Edge|HideFirstRunExperience|REG_DWORD|1\nHKCU\\Control Panel\\Desktop|DragFullWindows|REG_SZ|1'}]}
 ]};
 const tGen={id:'gerar',title:'Generate XML',groups:[]};
 
@@ -599,6 +602,9 @@ const PT={
  "No tweaks selected: the XML only handles installation and OOBE.":"Nenhum tweak selecionado: o XML só trata da instalação e do OOBE.",
  "Language and region":"Idioma e região",
  "Windows language":"Idioma do Windows",
+ "Regional format":"Formato regional",
+ "Same as Windows language":"Igual ao idioma do Windows",
+ "Dates, numbers and currency. Leave as is to follow the Windows language, or choose another one (e.g. English Windows with Portuguese dates).":"Datas, números e moeda. Deixe como está para seguir o idioma do Windows ou escolha outro (ex.: Windows em inglês com datas portuguesas).",
  "Your ISO must include this language.":"O ISO tem de incluir este idioma.",
  "Keyboard":"Teclado",
  "Portuguese (Portugal)":"Português (Portugal)",
@@ -842,6 +848,12 @@ const PT={
  "Disables the feature.":"Desativa a funcionalidade.",
  "Remove OneDrive":"Remover o OneDrive",
  "Install at first sign-in":"Instalar no primeiro início de sessão",
+ "Extra registry settings":"Definições de registo extra",
+ "Registry settings":"Definições de registo",
+ "Advanced. One setting per line: HIVE\\Path|Name|TYPE|Data. HIVE is HKLM or HKCU (HKCU follows the \"per-user tweaks\" scope in the User account tab). Use (Default) as the name for the default value. Imported files put here the registry settings that match no option of this page.":"Avançado. Uma definição por linha: HIVE\\Caminho|Nome|TIPO|Dados. HIVE é HKLM ou HKCU (HKCU segue o âmbito dos «ajustes por utilizador» no separador Conta de utilizador). Use (Default) como nome para o valor predefinido. Os ficheiros importados colocam aqui as definições de registo que não correspondem a nenhuma opção desta página.",
+ "The file has components for several architectures; only one was read (the others repeat the same settings).":"O ficheiro tem componentes para várias arquiteturas; só uma foi lida (as outras repetem as mesmas definições).",
+ "Registry settings in the file that match no option of this page were put in the \"Extra registry settings\" box (Software tab), where you can edit or remove them.":"As definições de registo do ficheiro que não correspondem a nenhuma opção desta página foram colocadas na caixa «Definições de registo extra» (separador Software), onde as pode editar ou remover.",
+ "Some lines in \"Extra registry settings\" are not in the HIVE\\Path|Name|TYPE|Data format and will be ignored.":"Algumas linhas em «Definições de registo extra» não estão no formato HIVE\\Caminho|Nome|TIPO|Dados e serão ignoradas.",
  "One winget ID per line (e.g. 7zip.7zip). Requires internet; the network is re-enabled first. You can import the winget-apps.json produced by Programas.cmd.":"Um ID do winget por linha (ex.: 7zip.7zip). Precisa de internet; a rede é reativada antes. Pode importar o winget-apps.json gerado pelo Programas.cmd.",
  "winget package IDs":"IDs de pacotes winget",
  "\"Random\" asks Windows to generate a unique name on every installation.":"«Aleatório» pede ao Windows para gerar um nome único em cada instalação.",
@@ -1142,7 +1154,7 @@ function field(o){
   inp=el('select',{onchange:e=>{S[o.id]=e.target.value;save();refresh()}},o.opts.map(([a,b])=>el('option',{value:a,text:o.raw?b:tr(b)})));
   inp.value=v;
  }else if(o.type==='textarea'){
-  inp=el('textarea',{spellcheck:'false',placeholder:'7zip.7zip\nVideoLAN.VLC',onchange:e=>{S[o.id]=e.target.value;save();refresh()}});
+  inp=el('textarea',{spellcheck:'false',placeholder:o.ph||'7zip.7zip\nVideoLAN.VLC',onchange:e=>{S[o.id]=e.target.value;save();refresh()}});
   inp.value=v;
   return el('div',{class:'row full'},head,inp);
  }else{
@@ -1254,6 +1266,7 @@ function netFx(c){
   c.ps.push("Enable-NetFirewallRule -Group '@FirewallAPI.dll,-28752'");
  }
 }
+const XREG=/^(HKLM|HKCU)\\([^|"]+)\|([^|"]*)\|(REG_(?:DWORD|QWORD|SZ|EXPAND_SZ|BINARY|MULTI_SZ))\|([^"]*)$/i;
 function collect(){
  const c={reg:[],ps:[],logon:[],appx:[]};
  for(const o of allOpts()){
@@ -1268,9 +1281,13 @@ function collect(){
   }
  }
  netFx(c);
+ for(const l of String(S.xreg||'').split('\n')){
+  const m=XREG.exec(l.trim());if(!m)continue;
+  c.reg.push({k:'reg',h:m[1].toUpperCase()==='HKLM'?'HKLM':'HKCU',p:m[2],n:m[3]==='(Default)'||m[3]==='@'?null:m[3],t:m[4].toUpperCase(),d:m[5]});
+ }
  return c;
 }
-const regLine=(it,root)=>`reg add "${root}\\${it.p}" ${it.n===null?'/ve':'/v "'+it.n+'"'} /t ${it.t} /d ${it.t===Z?'"'+it.d+'"':it.d} /f | Out-Null`;
+const regLine=(it,root)=>`reg add "${root}\\${it.p}" ${it.n===null?'/ve':'/v "'+it.n+'"'} /t ${it.t} /d ${it.t===Z||it.t==='REG_EXPAND_SZ'?'"'+it.d+'"':it.d} /f | Out-Null`;
 
 function scripts(c){
  const hklm=c.reg.filter(r=>r.h==='HKLM'),hkcu=c.reg.filter(r=>r.h==='HKCU');
@@ -1315,7 +1332,7 @@ function build(){
  const rs=cmds=>['<RunSynchronous>',...cmds.flatMap((p,i)=>['  <RunSynchronousCommand wcm:action="add">',`    <Order>${i+1}</Order>`,`    <Path>${esc(p)}</Path>`,'  </RunSynchronousCommand>']),'</RunSynchronous>'];
  const fl=cmds=>['<FirstLogonCommands>',...cmds.flatMap((p,i)=>['  <SynchronousCommand wcm:action="add">',`    <Order>${i+1}</Order>`,`    <CommandLine>${esc(p)}</CommandLine>`,'    <RequiresUserInput>false</RequiresUserInput>','  </SynchronousCommand>']),'</FirstLogonCommands>'];
  const pass=(n,l)=>l.length?[`<settings pass="${n}">`,...l.map(x=>'  '+x),'</settings>']:[];
- const intl=[`<InputLocale>${esc(kbd)}</InputLocale>`,`<SystemLocale>${lang}</SystemLocale>`,`<UILanguage>${lang}</UILanguage>`,`<UserLocale>${lang}</UserLocale>`];
+ const intl=[`<InputLocale>${esc(kbd)}</InputLocale>`,`<SystemLocale>${lang}</SystemLocale>`,`<UILanguage>${lang}</UILanguage>`,`<UserLocale>${S.userLoc||lang}</UserLocale>`];
 
  /* windowsPE */
  const pe=comp('Microsoft-Windows-International-Core-WinPE',['<SetupUILanguage>',`  <UILanguage>${lang}</UILanguage>`,'</SetupUILanguage>',...intl]);
@@ -1400,6 +1417,7 @@ function build(){
   else if(!dnsOk())notes.push(['w','Static address without DNS servers: choose DNS servers in the Network tab or name resolution will not work.']);
  }
  if(S.dnsMode==='custom'&&!dnsOk())notes.push(['w','Invalid custom DNS servers: they will not be applied.']);
+ if(String(S.xreg||'').split('\n').some(l=>l.trim()&&!XREG.test(l.trim())))notes.push(['w','Some lines in "Extra registry settings" are not in the HIVE\\Path|Name|TYPE|Data format and will be ignored.']);
  if(S.rdp&&S.sv_rdp)notes.push(['w','Remote Desktop is enabled in the Network tab but its service is set to be disabled in Windows services: it will not work.']);
  if(local&&S.accGroup==='Users'&&(wifiReady()||staticOk()||dnsOk()||S.noIpv6||S.netPriv))notes.push(['w','Network settings are applied at first sign-in and need an administrator account.']);
  if(curLevel()==='ult')notes.push(['w','ULTIMATE removes apps and services that some features rely on (Xbox, Camera, Media Player…). Test in a virtual machine first.']);
@@ -1462,22 +1480,73 @@ function parseAnswerFile(text){
  if(doc.documentElement.localName!=='unattend')throw new Error('not an unattend answer file (root element <'+doc.documentElement.localName+'>)');
  return doc;
 }
-/* flat list of everything the file says: XML leaves (path + text) and script lines */
-function flatAnswer(doc){
+/* registry settings are compared by signature, whatever syntax the file uses (reg add, Winhance Set-RegistryValue) */
+const REGTYPES={DWord:'REG_DWORD',String:'REG_SZ',ExpandString:'REG_EXPAND_SZ',Binary:'REG_BINARY',QWord:'REG_QWORD',MultiString:'REG_MULTI_SZ'};
+const SETRE=/^Set-RegistryValue -Path '((?:[^']|'')*)' -Name '((?:[^']|'')*)' -Type '(\w+)' -Value ('(?:[^']|'')*'|\S+)(?: -Description .*)?$/;
+const regSigOf=(h,p,n,t,d)=>(h==='HKLM'?'HKLM':'HKCU')+'|'+p+'|'+(n||'')+'|'+t+'|'+d;
+/* returns the signature of a registry line (reg add or Set-RegistryValue) or null */
+function regLineSig(ln){
+ let m=REGRE.exec(ln);
+ if(m)return regSigOf(m[1],m[2],m[3]??'',m[4],m[5]!==undefined?m[5]:m[6]);
+ m=SETRE.exec(ln);
+ if(!m||!REGTYPES[m[3]])return null;
+ let path=unq(m[1]),hive;
+ const hm=/^(HKLM|HKCU|HKCR):\\(.*)$/.exec(path);
+ if(!hm)return null;
+ if(hm[1]==='HKCR'){hive='HKLM';path='SOFTWARE\\Classes\\'+hm[2]}else{hive=hm[1];path=hm[2]}
+ let v=m[4];
+ v=v[0]==="'"?unq(v.slice(1,-1)):v;
+ if(m[3]==='DWord'&&/^-\d+$/.test(v))v=String(4294967296+Number(v));
+ return regSigOf(hive,path,unq(m[2]),REGTYPES[m[3]],v);
+}
+/* commands that this page writes in its own way: compared by what they do, not by their text */
+function canonCmd(t){
+ if(/ExtractScript|Winhancements\.ps1|WinTweaks\\(system|firstlogon)\.ps1/.test(t))return null;
+ if(/NetFx3/.test(t))return null;
+ if(/BypassNRO/.test(t))return 'BypassNRO'+(/\/d\s+1\b/.test(t)?'=1':'?');
+ if(/Disable-NetAdapter/.test(t))return 'Disable-NetAdapter';
+ if(/Enable-NetAdapter/.test(t))return 'Enable-NetAdapter';
+ const m=/LabConfig"?\s+\/v\s+(\w+)\s+\/t\s+REG_DWORD\s+\/d\s+(\d+)/i.exec(t);
+ if(m)return 'LabConfig:'+m[1]+'='+m[2];
+ return t.replace(/\s+/g,' ').trim();
+}
+const OWN_FILES=['system.ps1','firstlogon.ps1'];
+/* flat list of everything the file says: XML leaves (path + text) and script lines.
+   Components of other architectures are copies of the same settings and are skipped. */
+function flatAnswer(doc,arch){
  const out=[];
  const walk=(e,path)=>{
   if(e.namespaceURI===CPI)return;
   const n=e.localName;let p=path+'/'+n;
+  if(n==='ExtractScript'||n==='Description')return;
   if(n==='settings')p+='['+e.getAttribute('pass')+']';
-  if(n==='component')p+='['+e.getAttribute('name')+','+(e.getAttribute('processorArchitecture')||'')+']';
+  if(n==='component'){
+   const a=e.getAttribute('processorArchitecture')||'';
+   if(arch&&a&&a!==arch)return;
+   p+='['+e.getAttribute('name')+','+a+']';
+  }
   if(n==='File'&&path.endsWith('/Extensions')){
    const base=(e.getAttribute('path')||'').split('\\').pop()||'?';
-   for(const ln of e.textContent.replace(/\r/g,'').split('\n')){const t=ln.trim();if(t&&!t.startsWith('#'))out.push({kind:'script',file:base,text:t})}
+   const lines=e.textContent.replace(/\r/g,'').split('\n').map(x=>x.trim());
+   if(OWN_FILES.includes(base)){
+    for(const t of lines)if(t&&!t.startsWith('#')){const g=regLineSig(t);out.push(g?{kind:'reg',sig:g}:{kind:'script',file:base,text:t})}
+   }else{
+    /* a script from another tool (e.g. Winhancements.ps1): registry settings are compared one by one,
+       the rest is summarised because it cannot be converted to options */
+    const txt=lines.join('\n'),cnt=re=>(txt.match(re)||[]).length;
+    for(const t of lines){const g=regLineSig(t);if(g)out.push({kind:'reg',sig:g})}
+    const rm=cnt(/^Remove-Registry(?:Value|Key) /gm);if(rm)out.push({kind:'script',file:base,text:rm+' Remove-RegistryValue / Remove-RegistryKey statements (deleting registry entries)'});
+    const bn=cnt(/^\s*Set-Binary(?:Bit|Byte) /gm);if(bn)out.push({kind:'script',file:base,text:bn+' Set-BinaryBit / Set-BinaryByte statements (binary registry values)'});
+    const feats=[[/powercfg/,'power plan and powercfg settings'],[/schtasks|Register-ScheduledTask/,'scheduled tasks (enable/disable, per-user task)'],[/reg import/,'.reg imports (Explorer context menu entries)'],[/Get-AppxPackage|Remove-AppxPackage/,'removal of Microsoft Store apps'],[/Enable-ComputerRestore/,'System Restore'],[/Start-ProcessAsUser|CreateProcessAsUser/,'helper that runs commands as the signed-in user'],[/\.lnk/,'desktop shortcuts']];
+    for(const [re,l] of feats)if(re.test(txt))out.push({kind:'script',file:base,text:l});
+   }
    return;
   }
   const kids=[...e.children].filter(c=>c.namespaceURI!==CPI);
   if(!kids.length){
-   if(n==='Order')return;
+   if(n==='Order'||n==='settings')return;
+   if(n==='NetworkLocation')return;
+   if(n==='Path'||n==='CommandLine'){const c=canonCmd(e.textContent.trim());if(c===null)return;out.push({kind:'xml',path:p,text:c});return}
    /* the same Shell-Setup values work in specialize or oobeSystem: compare them as one */
    if(['TimeZone','ComputerName','RegisteredOwner','RegisteredOrganization'].includes(n))p=p.replace('settings[oobeSystem]','settings[specialize]');
    out.push({kind:'xml',path:p,text:e.textContent.trim()});return;
@@ -1487,7 +1556,7 @@ function flatAnswer(doc){
  walk(doc.documentElement,'');
  return out;
 }
-const flatKey=e=>(e.kind==='script'?'script:'+e.file:e.path)+'\0'+e.text;
+const flatKey=e=>e.kind==='reg'?'reg\0'+e.sig:(e.kind==='script'?'script:'+e.file:e.path)+'\0'+e.text;
 function mapAnswerFile(doc){
  const N={},notes=[];let redacted=false;
  for(const o of allOpts()){
@@ -1497,16 +1566,25 @@ function mapAnswerFile(doc){
  N.tz='';N.edition='ask';N.accMode='oobe';N.pcMode='auto';N.ipMode='dhcp';N.dnsMode='';
  const X={},archs=new Set();
  for(const st of xkids(doc.documentElement,'settings'))for(const c of xkids(st,'component')){
-  const k=st.getAttribute('pass')+'|'+c.getAttribute('name');if(!X[k])X[k]=c;
   const a=c.getAttribute('processorArchitecture');if(['amd64','arm64','x86'].includes(a))archs.add(a);
  }
+ /* files made for several architectures repeat the same components: read amd64 if present, else the first one */
+ const arch=archs.has('amd64')?'amd64':[...archs][0]||'';
+ for(const st of xkids(doc.documentElement,'settings'))for(const c of xkids(st,'component')){
+  const a=c.getAttribute('processorArchitecture');
+  if(arch&&a&&a!==arch)continue;
+  const k=st.getAttribute('pass')+'|'+c.getAttribute('name');if(!X[k])X[k]=c;
+ }
+ if(archs.size>1)notes.push(['i','The file has components for several architectures; only one was read (the others repeat the same settings).']);
  const G=(pass,name)=>X[pass+'|'+name]||null;
  const cmds=c=>xkids(xk(c,'RunSynchronous'),'RunSynchronousCommand').map(x=>xt(x,'Path')||'');
- if(archs.size)N.arch=[...archs][0];
+ if(arch)N.arch=arch;
  /* language and keyboard */
  const intl=G('oobeSystem','Microsoft-Windows-International-Core'),intlPE=G('windowsPE','Microsoft-Windows-International-Core-WinPE');
  const lg=xt(intl,'UILanguage')||xt(intlPE,'UILanguage')||xt(xk(intlPE,'SetupUILanguage'),'UILanguage');
  if(lg&&LANGS.some(l=>l[0]===lg))N.lang=lg;
+ const ul=xt(intl,'UserLocale')||xt(intlPE,'UserLocale');
+ if(ul&&ul!==N.lang&&LANGS.some(l=>l[0]===ul))N.userLoc=ul;
  const kb=xt(intl,'InputLocale')||xt(intlPE,'InputLocale');
  if(kb&&KBDS.some(k=>k[0]===kb))N.kbd=kb;
  /* windowsPE: setup */
@@ -1522,6 +1600,7 @@ function mapAnswerFile(doc){
  for(const p of cmds(G('specialize','Microsoft-Windows-Deployment'))){
   if(/BypassNRO/.test(p)&&/\/d\s+1\b/.test(p))N.nro=true;
   if(/Disable-NetAdapter/.test(p))N.offline=true;
+  if(/NetFx3/.test(p))N.net35=true;
  }
  const ss=G('specialize','Microsoft-Windows-Shell-Setup'),os0=G('oobeSystem','Microsoft-Windows-Shell-Setup');
  const sv=n=>xt(ss,n)||xt(os0,n);
@@ -1557,10 +1636,12 @@ function mapAnswerFile(doc){
  const lines=t=>new Set(t.split('\n').map(x=>x.replace(/\s+$/,'')));
  const sysL=lines(sysT),logL=lines(logT);
  const regSet=new Set();let hasDef=false,hasUser=false;
- for(const [t,isSys] of [[sysT,true],[logT,false]])for(const ln of t.split('\n')){
-  const m=REGRE.exec(ln.replace(/\s+$/,''));if(!m)continue;
-  if(m[1]==='HKU\\WH_DEF')hasDef=true;else if(m[1]==='HKCU'&&!isSys)hasUser=true;
-  regSet.add((m[1]==='HKLM'?'HKLM':'HKCU')+'|'+m[2]+'|'+(m[3]??'')+'|'+m[4]+'|'+(m[5]!==undefined?m[5]:m[6]));
+ for(const [fn,t] of Object.entries(files))for(const raw of t.split('\n')){
+  const ln=raw.trim(),sg=regLineSig(ln);if(!sg)continue;
+  regSet.add(sg);
+  if(!OWN_FILES.includes(fn)){if(sg.startsWith('HKCU|'))hasDef=true}
+  else if(/^reg add "HKU\\WH_DEF/.test(ln))hasDef=true;
+  else if(sg.startsWith('HKCU|')&&fn==='firstlogon.ps1')hasUser=true;
  }
  N.scope=!hasDef&&hasUser?'first':'default';
  const am=/^\$apps = @\((.*)\)$/m.exec(sysT),appx=new Set(am?psList(am[1]):[]);
@@ -1572,7 +1653,7 @@ function mapAnswerFile(doc){
   if(o.type==='toggle')N[o.id]=all(o.fx(true)||[]);
   else if(o.type==='select'){let best='',bn=0;for(const [v] of o.opts){if(!v)continue;const it=o.fx(v)||[];if(all(it)&&it.length>bn){best=v;bn=it.length}}N[o.id]=best}
  }
- if(sysT.includes('/featurename:NetFx3'))N.net35=true;
+ if(/\/featurename:NetFx3/i.test(sysT))N.net35=true;
  if(/^Set-LocalUser -Name '.*' -PasswordNeverExpires \$true$/m.test(logT))N.pwNever=true;
  const wg=/^\$ids = @\((.*)\)$/m.exec(logT);if(wg)N.wg=psList(wg[1]).join('\n');
  /* network (see netFx) */
@@ -1602,15 +1683,29 @@ function mapAnswerFile(doc){
  N.noIpv6=logT.includes('Disable-NetAdapterBinding');
  N.netPriv=logT.includes('Set-NetConnectionProfile -NetworkCategory Private');
  N.rdp=regSet.has('HKLM|SYSTEM\\CurrentControlSet\\Control\\Terminal Server|fDenyTSConnections|REG_DWORD|0')&&sysL.has("Enable-NetFirewallRule -Group '@FirewallAPI.dll,-28752'");
+ /* registry settings that belong to no option are kept in the "extra registry settings" box */
+ {
+  const old=S;let used;
+  try{S=Object.assign({},N);used=new Set(collect().reg.map(sig))}finally{S=old}
+  const keep=[],skip=[];
+  for(const g of regSet){
+   if(used.has(g))continue;
+   const [h,p,n,t,d]=g.split('|');
+   if(g.split('|').length!==5||/["\r\n]/.test(p+n+d)){skip.push(g);continue}
+   keep.push(h+'\\'+p+'|'+(n||'(Default)')+'|'+t+'|'+d);
+  }
+  N.xreg=keep.join('\n');
+  if(keep.length)notes.push(['i','Registry settings in the file that match no option of this page were put in the "Extra registry settings" box (Software tab), where you can edit or remove them.']);
+ }
  return {N,notes,redacted};
 }
 function importAnswer(text,name){
  const doc=parseAnswerFile(text),{N,notes,redacted}=mapAnswerFile(doc);
  const old=S;let re;
  try{S=Object.assign({},N);if(redacted)S.wifiPass='********';re=build()}finally{S=old}
- const have=new Set(flatAnswer(new DOMParser().parseFromString(re.xml,'application/xml')).map(flatKey));
+ const have=new Set(flatAnswer(new DOMParser().parseFromString(re.xml,'application/xml'),N.arch).map(flatKey));
  const seen=new Set(),unsup=[];
- for(const e of flatAnswer(doc)){const k=flatKey(e);if(have.has(k)||seen.has(k))continue;seen.add(k);unsup.push(e)}
+ for(const e of flatAnswer(doc,N.arch)){const k=flatKey(e);if(have.has(k)||seen.has(k))continue;seen.add(k);unsup.push(e)}
  return {N,notes,unsup,name};
 }
 function detectedOptions(){
@@ -1635,6 +1730,7 @@ function applyImport(r){
 const clip=(v,n)=>v.length>n?v.slice(0,n)+'…':v;
 function unsLabel(e){
  if(e.kind==='script')return e.file+': '+clip(e.text,110);
+ if(e.kind==='reg'){const [h,p,n,t,d]=e.sig.split('|');return 'Registry: '+h+'\\'+p+' › '+(n||'(Default)')+' = '+clip(d,40)+' ('+t+')'}
  const segs=e.path.split('/').filter(Boolean).slice(1).map(x=>x.replace(/^settings\[(.+)\]$/,'$1').replace(/^component\[([^,\]]+).*\]$/,'$1'));
  const first=e.text.split('\n')[0];
  return segs.join(' › ')+(e.text?' = '+clip(first,80)+(first!==e.text?' …':''):'');
