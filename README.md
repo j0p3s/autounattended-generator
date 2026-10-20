@@ -18,11 +18,12 @@ Pick your settings in tabs (installation, user account, network, privacy, perfor
 - **Software (winget):** install packages on first logon from a list of winget IDs (import a `winget-apps.json` produced by `winget export`).
 - **Languages:** a language menu in the top bar. The base language is English (US); Portuguese (Portugal) is included. More languages can be added with a small dictionary (see *Adding a language*).
 - **Presets, import/export:** a *Recommended* button on every tab (plus *Reset tab*), global *Recommended* and *Gaming* presets (the *Gaming* one sets up every tab for gaming); save and load your configuration as JSON.
+- **Import an existing `autounattend.xml`:** the *Import XML* button reads a file (from this generator or another tool), fills in every option it recognizes in the tabs and lists, in a report at the top of the page, the settings and script lines that this page does not support and that would be lost when you generate a new XML.
 - **XML preview and validation** with warnings for risky choices, plus a view of the embedded scripts.
 
 ## Usage
 
-1. Open the generator: use the *Open the generator* button on the GitHub Pages site of this repository (`app.html`), or open `app.html` locally in any modern browser.
+1. Open the generator: the GitHub Pages site of this repository, or open `index.html` locally in any modern browser.
 2. Go through the tabs and choose your options.
 3. Open **Generate XML**, check the warnings, then click **Download autounattend.xml**.
 4. Place `autounattend.xml` in the root of your Windows installation USB drive (next to `setup.exe`), or inject it into your ISO.
@@ -58,34 +59,30 @@ User-level tweaks (theme, taskbar, Explorer…) can be applied either to the def
 
 ## Run locally
 
-No build step is needed to use the generator:
+No build step is needed:
 
 ```
 git clone https://github.com/<your-user>/autounattend-generator.git
 cd autounattend-generator
-# open app.html in your browser
+# open index.html in your browser
 ```
-
-To preview the themed landing page locally (optional): `bundle install && bundle exec jekyll serve`.
 
 ## Publish with GitHub Pages
 
-Repository **Settings → Pages → Build and deployment → Deploy from a branch → `main` / `/ (root)`**. The site uses the [Midnight](https://github.com/pages-themes/midnight) theme (`_config.yml`). The landing page is `index.md`, available at `https://<your-user>.github.io/autounattend-generator/`, and the generator itself is at `https://<your-user>.github.io/autounattend-generator/app.html`.
+Repository **Settings → Pages → Build and deployment → Deploy from a branch → `main` / `/ (root)`**. The generator is `index.html`, so it is available at `https://<your-user>.github.io/autounattend-generator/`. The empty `.nojekyll` file tells GitHub Pages to serve the files as they are, without Jekyll.
 
 ## Repository structure
 
 | File | Purpose |
 | --- | --- |
-| `index.md` | Themed landing page (Midnight) |
-| `app.html` | The generator (single self-contained page) |
-| `_config.yml` | Jekyll and theme configuration |
-| `Gemfile` | Optional, for local Jekyll preview |
+| `index.html` | The generator (single self-contained page, also the GitHub Pages site) |
+| `.nojekyll` | Makes GitHub Pages serve the files without Jekyll |
 | `README.md` | This documentation |
 | `LICENSE` | MIT license |
 
 ## Adding a language
 
-All UI text in `app.html` is written in English (US), which is the base language. Other languages are dictionaries that map the English text to its translation.
+All UI text in `index.html` is written in English (US), which is the base language. Other languages are dictionaries that map the English text to its translation.
 
 1. Copy the `PT` dictionary (the `const PT={ ... }` block) and translate the values.
 2. Register it: `DICTS.xx = XX;` right after the dictionary.

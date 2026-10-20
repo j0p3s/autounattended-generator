@@ -78,6 +78,12 @@ summary{cursor:pointer;font-weight:600}
 .level.ult.sel{border-color:var(--bad);background:color-mix(in srgb,var(--bad) 12%,var(--card));box-shadow:0 0 0 3px color-mix(in srgb,var(--bad) 25%,transparent)}
 .chk{font-size:.75rem;font-weight:700;color:var(--ok)}
 .warn{color:var(--warn);font-weight:600;margin:10px 0 0}
+.imp{border-left:6px solid var(--ok)}
+.imp.bad{border-left-color:var(--warn)}
+.imp h2{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between}
+.imp ul{margin:6px 0 0;padding-left:20px}
+.imp li{margin:3px 0;word-break:break-word}
+.imp code{font-size:.85em}
 footer{border-top:1px solid var(--bd);color:var(--mut);font-size:.85rem;padding:16px 0 28px}
 footer p{margin:4px 0}
 </style>
@@ -92,6 +98,7 @@ footer p{margin:4px 0}
     <button id="b-min" title="Unchecks all tweaks">Clear tweaks</button>
     <span class="sp"></span>
     <select id="lang" aria-label="Language" title="Language"></select>
+    <button id="b-impx" title="Read an existing autounattend.xml and show its options in the page">Import XML</button>
     <button id="b-imp">Import config</button>
     <button id="b-exp">Export config</button>
     <button id="b-rst">Reset all</button>
@@ -99,12 +106,13 @@ footer p{margin:4px 0}
   </div>
 </div></header>
 <nav><div class="wrap"><div id="tabs" role="tablist"></div></div></nav>
-<main class="wrap"><div id="panel"></div></main>
+<main class="wrap"><div id="impbox"></div><div id="panel"></div></main>
 <footer><div class="wrap">
   <p id="f1">Independent project, not affiliated with or endorsed by Winhance (memstechtips). It does not produce Winhance's official file: it generates a standard <code>autounattend.xml</code> with embedded scripts that apply equivalent tweaks. Always review the XML before using it.</p>
   <p id="f2">An answer file can erase disks and create accounts. Test in a virtual machine first. Use at your own risk.</p>
 </div></footer>
 <input type="file" id="file" accept=".json,application/json" hidden>
+<input type="file" id="filex" accept=".xml,application/xml,text/xml" hidden>
 <script>
 'use strict';
 /* ---------- data helpers ---------- */
@@ -991,6 +999,23 @@ Object.assign(PT,{
 "Invalid custom DNS servers: they will not be applied.":"Servidores DNS personalizados inválidos: não serão aplicados.",
 "Network settings are applied at first sign-in and need an administrator account.":"As definições de rede são aplicadas no primeiro início de sessão e precisam de uma conta de administrador."
 });
+Object.assign(PT,{
+"Import XML":"Importar XML",
+"Read an existing autounattend.xml and show its options in the page":"Lê um autounattend.xml existente e mostra as opções na página",
+"Could not read the file: ":"Não foi possível ler o ficheiro: ",
+"Replace the current options with the ones in this file?":"Substituir as opções atuais pelas deste ficheiro?",
+"Imported file":"Ficheiro importado",
+"Dismiss":"Fechar",
+"options detected in the file and shown in the tabs.":"opções detetadas no ficheiro e mostradas nos separadores.",
+"settings in the file are not supported by this page and will NOT be in the XML you generate:":"definições do ficheiro não são suportadas por esta página e NÃO vão estar no XML que gerar:",
+"more":"mais",
+"Every setting in the file is supported by this page.":"Todas as definições do ficheiro são suportadas por esta página.",
+"Options detected":"Opções detetadas",
+"lines":"linhas",
+"The Wi-Fi password was removed from the file: type it again in the Network tab.":"A palavra-passe do Wi-Fi foi removida do ficheiro: volte a escrevê-la no separador Rede.",
+"The account password was stored encoded in the file; it will be written in plain text.":"A palavra-passe da conta estava codificada no ficheiro; será escrita em texto simples.",
+"The imported file has settings that this page does not support; they are not in this XML (see the import report at the top of the page).":"O ficheiro importado tem definições que esta página não suporta; não estão neste XML (veja o relatório de importação no topo da página)."
+});
 DICTS.pt=PT;
 /* ---------- state ---------- */
 let S={},cur='windows';
@@ -1157,7 +1182,7 @@ function softExtras(){
   el('div',{class:'acts'},el('button',{onclick:()=>imp.click()},tr('Import winget-apps.json')),imp));
 }
 function refresh(keepTop){
- const y=window.scrollY;renderTabs(keepTop);renderPanel();
+ const y=window.scrollY;renderTabs(keepTop);renderImport();renderPanel();
  window.scrollTo(0,keepTop?0:y);
 }
 /* ---------- script and XML generator ---------- */
@@ -1403,6 +1428,7 @@ function renderGen(p){
  const r=build();
  const doc=new DOMParser().parseFromString(r.xml,'application/xml');
  const bad=doc.querySelector('parsererror');
+ const nn=IMP&&IMP.unsup.length?r.notes.concat([['w','The imported file has settings that this page does not support; they are not in this XML (see the import report at the top of the page).']]):r.notes;
  const copy=el('button',{},tr('Copy XML'));
  copy.onclick=()=>copyText(r.xml,copy);
  p.append(el('section',{class:'card'},
@@ -1410,10 +1436,233 @@ function renderGen(p){
   el('p',{class:'status '+(bad?'bad':'ok'),text:bad?tr('Invalid XML: ')+bad.textContent.slice(0,200):tr('Well-formed XML')}),
   el('div',{class:'acts'},el('button',{class:'pri',onclick:()=>download('autounattend.xml',r.xml,'application/xml')},tr('Download autounattend.xml')),copy),
   el('p',{class:'hint',text:tr('Place the file in the root of the Windows installation USB drive (next to setup.exe) or inject it into the ISO.')}),
-  r.notes.length?el('ul',{class:'notes'},r.notes.map(([k,t])=>el('li',{class:k==='w'?'w':''},(k==='w'?tr('Warning: '):'')+tr(t)))):null),
+  nn.length?el('ul',{class:'notes'},nn.map(([k,t])=>el('li',{class:k==='w'?'w':''},(k==='w'?tr('Warning: '):'')+tr(t)))):null),
   el('section',{class:'card'},el('h2',{text:tr('Preview')}),el('pre',{text:r.xml}),
    r.hasSys?el('details',{},el('summary',{text:tr('system.ps1 (specialize pass, runs as SYSTEM)')}),el('pre',{text:r.sys})):null,
    r.hasLogon?el('details',{},el('summary',{text:tr('firstlogon.ps1 (first sign-in)')}),el('pre',{text:r.logon})):null));
+}
+
+/* ---------- import an existing autounattend.xml ----------
+   1. mapAnswerFile() reads the XML and the embedded scripts and sets the matching options.
+   2. importAnswer() rebuilds an XML from those options and compares it with the file:
+      everything in the file that the rebuilt XML does not contain is reported as unsupported. */
+let IMP=null;
+const CPI='urn:schemas-microsoft-com:cpi';
+const xkids=(e,n)=>e?[...e.children].filter(c=>c.localName===n):[];
+const xk=(e,n)=>xkids(e,n)[0]||null;
+const xt=(e,n)=>{const k=xk(e,n);return k?k.textContent.trim():null};
+const unq=v=>v.replace(/''/g,"'");
+const psList=v=>{const o=[],re=/'((?:[^']|'')*)'/g;let m;while((m=re.exec(v)))o.push(unq(m[1]));return o};
+const REGRE=/^reg add "(HKLM|HKU\\WH_DEF|HKCU)\\(.+?)" (?:\/ve|\/v "(.*?)") \/t (REG_\w+) \/d (?:"(.*)"|(\S+)) \/f \| Out-Null$/;
+const LABKEYS={BypassTPMCheck:'bpTpm',BypassSecureBootCheck:'bpSb',BypassRAMCheck:'bpRam',BypassCPUCheck:'bpCpu',BypassStorageCheck:'bpSto',BypassDiskCheck:'bpDsk'};
+function parseAnswerFile(text){
+ const doc=new DOMParser().parseFromString(text.replace(/^﻿/,''),'application/xml');
+ const err=doc.querySelector('parsererror');
+ if(err)throw new Error(err.textContent.trim().slice(0,160));
+ if(doc.documentElement.localName!=='unattend')throw new Error('not an unattend answer file (root element <'+doc.documentElement.localName+'>)');
+ return doc;
+}
+/* flat list of everything the file says: XML leaves (path + text) and script lines */
+function flatAnswer(doc){
+ const out=[];
+ const walk=(e,path)=>{
+  if(e.namespaceURI===CPI)return;
+  const n=e.localName;let p=path+'/'+n;
+  if(n==='settings')p+='['+e.getAttribute('pass')+']';
+  if(n==='component')p+='['+e.getAttribute('name')+','+(e.getAttribute('processorArchitecture')||'')+']';
+  if(n==='File'&&path.endsWith('/Extensions')){
+   const base=(e.getAttribute('path')||'').split('\\').pop()||'?';
+   for(const ln of e.textContent.replace(/\r/g,'').split('\n')){const t=ln.trim();if(t&&!t.startsWith('#'))out.push({kind:'script',file:base,text:t})}
+   return;
+  }
+  const kids=[...e.children].filter(c=>c.namespaceURI!==CPI);
+  if(!kids.length){
+   if(n==='Order')return;
+   /* the same Shell-Setup values work in specialize or oobeSystem: compare them as one */
+   if(['TimeZone','ComputerName','RegisteredOwner','RegisteredOrganization'].includes(n))p=p.replace('settings[oobeSystem]','settings[specialize]');
+   out.push({kind:'xml',path:p,text:e.textContent.trim()});return;
+  }
+  for(const c of kids)walk(c,p);
+ };
+ walk(doc.documentElement,'');
+ return out;
+}
+const flatKey=e=>(e.kind==='script'?'script:'+e.file:e.path)+'\0'+e.text;
+function mapAnswerFile(doc){
+ const N={},notes=[];let redacted=false;
+ for(const o of allOpts()){
+  if(o.type==='button')continue;
+  N[o.id]=o.type==='toggle'?(o.id==='wifiAuto'||o.id==='wifiClean'?o.def:false):(o.fx&&o.type==='select'?'':o.def);
+ }
+ N.tz='';N.edition='ask';N.accMode='oobe';N.pcMode='auto';N.ipMode='dhcp';N.dnsMode='';
+ const X={},archs=new Set();
+ for(const st of xkids(doc.documentElement,'settings'))for(const c of xkids(st,'component')){
+  const k=st.getAttribute('pass')+'|'+c.getAttribute('name');if(!X[k])X[k]=c;
+  const a=c.getAttribute('processorArchitecture');if(['amd64','arm64','x86'].includes(a))archs.add(a);
+ }
+ const G=(pass,name)=>X[pass+'|'+name]||null;
+ const cmds=c=>xkids(xk(c,'RunSynchronous'),'RunSynchronousCommand').map(x=>xt(x,'Path')||'');
+ if(archs.size)N.arch=[...archs][0];
+ /* language and keyboard */
+ const intl=G('oobeSystem','Microsoft-Windows-International-Core'),intlPE=G('windowsPE','Microsoft-Windows-International-Core-WinPE');
+ const lg=xt(intl,'UILanguage')||xt(intlPE,'UILanguage')||xt(xk(intlPE,'SetupUILanguage'),'UILanguage');
+ if(lg&&LANGS.some(l=>l[0]===lg))N.lang=lg;
+ const kb=xt(intl,'InputLocale')||xt(intlPE,'InputLocale');
+ if(kb&&KBDS.some(k=>k[0]===kb))N.kbd=kb;
+ /* windowsPE: setup */
+ const setup=G('windowsPE','Microsoft-Windows-Setup'),ud=xk(setup,'UserData');
+ const key=xt(xk(ud,'ProductKey'),'Key');
+ if(key){const ed=Object.keys(KEYS).find(e=>KEYS[e]===key);
+  if(key==='00000-00000-00000-00000-00000')N.edition='ask';else if(ed)N.edition=ed;else{N.edition='custom';N.customKey=key}}
+ if(xt(ud,'AcceptEula')==='true')N.hideEula=true;
+ for(const p of cmds(setup)){const m=/LabConfig"?\s+\/v\s+(\w+)\s+\/t\s+REG_DWORD\s+\/d\s+1\b/i.exec(p);if(m&&LABKEYS[m[1]])N[LABKEYS[m[1]]]=true}
+ const disk=xk(xk(setup,'DiskConfiguration'),'Disk');
+ if(disk&&xt(disk,'DiskID')==='0'&&xt(disk,'WillWipeDisk')==='true')N.wipe=true;
+ /* specialize */
+ for(const p of cmds(G('specialize','Microsoft-Windows-Deployment'))){
+  if(/BypassNRO/.test(p)&&/\/d\s+1\b/.test(p))N.nro=true;
+  if(/Disable-NetAdapter/.test(p))N.offline=true;
+ }
+ const ss=G('specialize','Microsoft-Windows-Shell-Setup'),os0=G('oobeSystem','Microsoft-Windows-Shell-Setup');
+ const sv=n=>xt(ss,n)||xt(os0,n);
+ const cn=sv('ComputerName');
+ if(cn==='*')N.pcMode='random';else if(cn){N.pcMode='custom';N.pcName=cn}
+ N.owner=sv('RegisteredOwner')||'';N.org=sv('RegisteredOrganization')||'';
+ const tz=sv('TimeZone');N.tz=tz&&TZS.some(t=>t[0]===tz)?tz:'';
+ /* oobeSystem */
+ const os=G('oobeSystem','Microsoft-Windows-Shell-Setup'),oobe=xk(os,'OOBE');
+ if(xt(oobe,'HideEULAPage')==='true')N.hideEula=true;
+ N.hideOem=xt(oobe,'HideOEMRegistrationScreen')==='true';
+ N.hideOnline=xt(oobe,'HideOnlineAccountScreens')==='true';
+ N.hideWifi=xt(oobe,'HideWirelessSetupInOOBE')==='true';
+ const py=xt(oobe,'ProtectYourPC');if(['1','2','3'].includes(py))N.protect=py;
+ const acc=xk(xk(xk(os,'UserAccounts'),'LocalAccounts'),'LocalAccount');
+ if(acc){
+  N.accMode='local';N.accName=xt(acc,'Name')||N.accName;
+  const dn=xt(acc,'DisplayName');N.accDisplay=dn&&dn!==N.accName?dn:'';
+  const gr=xt(acc,'Group');if(gr==='Administrators'||gr==='Users')N.accGroup=gr;
+  const pw=xk(acc,'Password');let pv=xt(pw,'Value')||'';
+  if(pv&&xt(pw,'PlainText')==='false'){
+   try{const b=atob(pv);let t='';for(let i=0;i+1<b.length;i+=2)t+=String.fromCharCode(b.charCodeAt(i)|b.charCodeAt(i+1)<<8);
+    pv=t.endsWith('Password')?t.slice(0,-8):t;notes.push(['i','The account password was stored encoded in the file; it will be written in plain text.'])}catch(e){}
+  }
+  N.accPass=pv;
+ }
+ if(xt(xk(os,'AutoLogon'),'Enabled')==='true')N.autoLogon=true;
+ for(const c of xkids(xk(os,'FirstLogonCommands'),'SynchronousCommand'))if(/Enable-NetAdapter/.test(xt(c,'CommandLine')||''))N.offline=true;
+ /* embedded scripts */
+ const files={};
+ for(const f of xkids(xk(doc.documentElement,'Extensions'),'File'))files[(f.getAttribute('path')||'').split('\\').pop()]=f.textContent.replace(/\r/g,'');
+ const sysT=files['system.ps1']||'',logT=files['firstlogon.ps1']||'';
+ const lines=t=>new Set(t.split('\n').map(x=>x.replace(/\s+$/,'')));
+ const sysL=lines(sysT),logL=lines(logT);
+ const regSet=new Set();let hasDef=false,hasUser=false;
+ for(const [t,isSys] of [[sysT,true],[logT,false]])for(const ln of t.split('\n')){
+  const m=REGRE.exec(ln.replace(/\s+$/,''));if(!m)continue;
+  if(m[1]==='HKU\\WH_DEF')hasDef=true;else if(m[1]==='HKCU'&&!isSys)hasUser=true;
+  regSet.add((m[1]==='HKLM'?'HKLM':'HKCU')+'|'+m[2]+'|'+(m[3]??'')+'|'+m[4]+'|'+(m[5]!==undefined?m[5]:m[6]));
+ }
+ N.scope=!hasDef&&hasUser?'first':'default';
+ const am=/^\$apps = @\((.*)\)$/m.exec(sysT),appx=new Set(am?psList(am[1]):[]);
+ const sig=it=>it.h+'|'+it.p+'|'+(it.n===null?'':it.n)+'|'+it.t+'|'+String(it.d);
+ const have=it=>it.k==='reg'?regSet.has(sig(it)):it.k==='appx'?appx.has(it.n):(it.w==='sys'?sysL:logL).has(it.l)||(it.l.includes('\n')&&(it.w==='sys'?sysT:logT).includes(it.l));
+ const all=items=>items.length>0&&items.every(have);
+ for(const o of allOpts()){
+  if(!o.fx)continue;
+  if(o.type==='toggle')N[o.id]=all(o.fx(true)||[]);
+  else if(o.type==='select'){let best='',bn=0;for(const [v] of o.opts){if(!v)continue;const it=o.fx(v)||[];if(all(it)&&it.length>bn){best=v;bn=it.length}}N[o.id]=best}
+ }
+ if(sysT.includes('/featurename:NetFx3'))N.net35=true;
+ if(/^Set-LocalUser -Name '.*' -PasswordNeverExpires \$true$/m.test(logT))N.pwNever=true;
+ const wg=/^\$ids = @\((.*)\)$/m.exec(logT);if(wg)N.wg=psList(wg[1]).join('\n');
+ /* network (see netFx) */
+ const wm=/\$wx = @'\n([\s\S]*?)\n'@/.exec(logT);
+ if(wm){
+  const wd=new DOMParser().parseFromString(wm[1],'application/xml');
+  if(!wd.querySelector('parsererror')){
+   const g=n=>{const e=wd.getElementsByTagName(n)[0];return e?e.textContent:''};
+   N.wifiOn=true;N.wifiSsid=g('name');
+   const au=g('authentication');N.wifiAuth=au==='open'?'open':au==='WPA3SAE'?'wpa3':'wpa2';
+   N.wifiHidden=g('nonBroadcast')==='true';N.wifiAuto=g('connectionMode')!=='manual';
+   const kp=g('keyMaterial');
+   if(kp==='********'){redacted=true;N.wifiPass='';notes.push(['w','The Wi-Fi password was removed from the file: type it again in the Network tab.'])}else N.wifiPass=kp;
+   N.wifiClean=logT.includes("$m = [regex]::Match($wx");
+  }
+ }
+ const sm=/New-NetIPAddress -InterfaceIndex \$a\.ifIndex -AddressFamily IPv4 -IPAddress '([^']*)' -PrefixLength (\d+)(?: -DefaultGateway '([^']*)')?/.exec(logT);
+ if(sm){
+  N.ipMode='static';N.ipAddr=sm[1];N.ipPrefix=sm[2];N.ipGw=sm[3]||'';
+  const em=/^\$wired = .*\$_\.Name -like '\*(.*)\*'/m.exec(logT);N.ethName=em?unq(em[1]):'';
+ }
+ const dm=/^\$dns = @\((.*)\)$/m.exec(logT);
+ if(dm){
+  const l=psList(dm[1]),pre=Object.keys(DNSP).find(k=>DNSP[k].join()===l.join());
+  if(pre)N.dnsMode=pre;else{N.dnsMode='custom';N.dnsPri=l[0]||'';N.dnsSec=l[1]||''}
+ }
+ N.noIpv6=logT.includes('Disable-NetAdapterBinding');
+ N.netPriv=logT.includes('Set-NetConnectionProfile -NetworkCategory Private');
+ N.rdp=regSet.has('HKLM|SYSTEM\\CurrentControlSet\\Control\\Terminal Server|fDenyTSConnections|REG_DWORD|0')&&sysL.has("Enable-NetFirewallRule -Group '@FirewallAPI.dll,-28752'");
+ return {N,notes,redacted};
+}
+function importAnswer(text,name){
+ const doc=parseAnswerFile(text),{N,notes,redacted}=mapAnswerFile(doc);
+ const old=S;let re;
+ try{S=Object.assign({},N);if(redacted)S.wifiPass='********';re=build()}finally{S=old}
+ const have=new Set(flatAnswer(new DOMParser().parseFromString(re.xml,'application/xml')).map(flatKey));
+ const seen=new Set(),unsup=[];
+ for(const e of flatAnswer(doc)){const k=flatKey(e);if(have.has(k)||seen.has(k))continue;seen.add(k);unsup.push(e)}
+ return {N,notes,unsup,name};
+}
+function detectedOptions(){
+ const out=[];
+ for(const t of tabs){
+  if(t.id==='gerar')continue;
+  const items=[];
+  for(const g of t.groups)for(const o of g.opts){
+   if(o.type==='button'||(o.show&&!o.show(S)))continue;
+   const v=S[o.id];
+   if(o.type==='toggle'?v:(v!==''&&v!=null))items.push({id:o.id,v});
+  }
+  if(items.length)out.push({tab:t.title,items});
+ }
+ return out;
+}
+function applyImport(r){
+ S=r.N;save();
+ IMP={name:r.name,unsup:r.unsup,notes:r.notes,set:detectedOptions()};
+ refresh(true);
+}
+const clip=(v,n)=>v.length>n?v.slice(0,n)+'…':v;
+function unsLabel(e){
+ if(e.kind==='script')return e.file+': '+clip(e.text,110);
+ const segs=e.path.split('/').filter(Boolean).slice(1).map(x=>x.replace(/^settings\[(.+)\]$/,'$1').replace(/^component\[([^,\]]+).*\]$/,'$1'));
+ const first=e.text.split('\n')[0];
+ return segs.join(' › ')+(e.text?' = '+clip(first,80)+(first!==e.text?' …':''):'');
+}
+function impValue(o,v){
+ if(o.type==='toggle')return tr(o.label);
+ let s=String(v);
+ if(o.type==='select'){const f=o.opts.find(x=>x[0]===v);s=f?(o.raw?f[1]:tr(f[1])):s}
+ if(o.type==='password')s='••••••';
+ else if(o.type==='textarea')s=s.split('\n').length+' '+tr('lines');
+ return tr(o.label)+': '+clip(s,70);
+}
+function renderImport(){
+ const box=$('#impbox');box.innerHTML='';
+ if(!IMP)return;
+ const n=IMP.set.reduce((a,g)=>a+g.items.length,0),bad=IMP.unsup.length>0;
+ const sec=el('section',{class:'card imp'+(bad?' bad':'')},
+  el('h2',{},el('span',{text:tr('Imported file')+': '+IMP.name}),el('button',{onclick:()=>{IMP=null;renderImport()}},tr('Dismiss'))),
+  el('p',{class:'hint',text:n+' '+tr('options detected in the file and shown in the tabs.')}));
+ if(bad){
+  const MAX=30,list=IMP.unsup.slice(0,MAX).map(e=>el('li',{},el('code',{text:unsLabel(e)})));
+  if(IMP.unsup.length>MAX)list.push(el('li',{text:'… '+(IMP.unsup.length-MAX)+' '+tr('more')}));
+  sec.append(el('p',{class:'warn',text:tr('Warning: ')+IMP.unsup.length+' '+tr('settings in the file are not supported by this page and will NOT be in the XML you generate:')}),el('ul',{},list));
+ }else sec.append(el('p',{class:'status ok',text:'✓ '+tr('Every setting in the file is supported by this page.')}));
+ if(IMP.notes.length)sec.append(el('ul',{class:'notes'},IMP.notes.map(([k,t])=>el('li',{class:k==='w'?'w':''},(k==='w'?tr('Warning: '):'')+tr(t)))));
+ if(n)sec.append(el('details',{},el('summary',{text:tr('Options detected')+' ('+n+')'}),
+  IMP.set.map(g=>el('p',{class:'hint'},el('b',{text:tr(g.tab)+': '}),g.items.map(i=>impValue(byId(i.id),i.v)).join(' · ')))));
+ box.append(sec);
 }
 
 /* ---------- interface language ----------
@@ -1431,8 +1680,8 @@ const langCode=v=>{
  return m?m.code:'en';
 };
 const CHROME_HTML=['h1','sub','f1','f2'].map(id=>[id,$('#'+id).innerHTML.trim()]);
-const CHROME_TXT=['b-rec','b-gam','b-min','b-imp','b-exp','b-rst','b-th'].map(id=>[id,$('#'+id).textContent.trim()]);
-const CHROME_TTL=['b-rec','b-gam','b-min','b-th'].map(id=>[id,$('#'+id).getAttribute('title')]);
+const CHROME_TXT=['b-rec','b-gam','b-min','b-impx','b-imp','b-exp','b-rst','b-th'].map(id=>[id,$('#'+id).textContent.trim()]);
+const CHROME_TTL=['b-rec','b-gam','b-min','b-impx','b-th'].map(id=>[id,$('#'+id).getAttribute('title')]);
 const TITLE_BASE=document.title;
 function applyChrome(){
  for(const[id,v]of CHROME_HTML)$('#'+id).innerHTML=tr(v);
@@ -1463,6 +1712,14 @@ $('#b-min').onclick=()=>applyPreset(null);
 $('#b-rst').onclick=()=>{if(confirm(tr('Reset all options to their default values?'))){defaults();save();refresh(true)}};
 $('#b-exp').onclick=()=>download('autounattend-config.json',JSON.stringify(S,null,2),'application/json');
 $('#b-imp').onclick=()=>$('#file').click();
+$('#b-impx').onclick=()=>$('#filex').click();
+$('#filex').onchange=async e=>{
+ const f=e.target.files[0];e.target.value='';if(!f)return;
+ let r;
+ try{r=importAnswer(await f.text(),f.name)}catch(err){alert(tr('Could not read the file: ')+err.message);return}
+ if(!confirm(tr('Replace the current options with the ones in this file?')))return;
+ applyImport(r);
+};
 $('#file').onchange=async e=>{
  const f=e.target.files[0];e.target.value='';if(!f)return;
  try{merge(JSON.parse(await f.text()));save();refresh()}catch(err){alert(tr('Invalid file: ')+err.message)}
