@@ -3,19 +3,19 @@ layout: default
 title: Autounattend Generator
 ---
 
-Create a Windows 10/11 `autounattend.xml` answer file by picking options in tabs: installation, user account, privacy, performance, power, updates, theme, taskbar, apps and more. Everything runs in your browser. Nothing is uploaded anywhere.
+Create a Windows 10/11 `autounattend.xml` answer file by picking options in tabs: installation, user account, network, privacy, performance, power, updates, theme, taskbar, debloat, services and more. Everything runs in your browser. Nothing is uploaded anywhere.
 
-<p><a class="btn" href="{{ '/generator.html' | relative_url }}">Open the generator</a></p>
+<p><a class="btn" href="{{ '/app.html' | relative_url }}">Open the generator</a></p>
 
 ## What you can configure
 
 - **Windows setup:** language, keyboard, time zone, edition and product key, Windows 11 hardware-check bypasses, optional automatic disk partitioning, network disabled during setup, OOBE screens.
 - **User account:** automatic local account, computer name, one-time auto-logon.
-- **Network:** connect to Wi-Fi automatically, static or automatic IP on wired adapters, DNS servers, Private network profile, Remote Desktop.
+- **Network:** Wi-Fi profile, automatic or static IP on wired adapters, DNS servers, Private network profile, Remote Desktop.
 - **Optimize:** privacy and security, performance and gaming, power, updates, notifications and sound.
 - **Customize:** theme, taskbar, Start menu, File Explorer.
-- **Debloat:** one-click levels (Minimal, Recommended, ULTIMATE) for removing bloatware, with every item adjustable.
-- **Apps:** remove built-in Windows apps, optional features and OneDrive.
+- **Debloat:** one-click levels (Minimal, Recommended, ULTIMATE) for removing bloatware, built-in apps, optional features and OneDrive, with every item adjustable.
+- **Windows services:** Default, Performance or Gaming profile, with every service adjustable.
 - **Software:** install programs with winget on first logon.
 
 ## How to use
