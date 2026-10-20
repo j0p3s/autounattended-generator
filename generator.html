@@ -25,11 +25,20 @@ button:hover{background:var(--hov)}
 button.pri{background:var(--ac);color:var(--acx);border-color:var(--ac);font-weight:600}
 button.pri:hover{filter:brightness(1.08)}
 nav{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:1px solid var(--bd);padding:8px 0}
-#tabs{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;scrollbar-width:thin}
-#tabs button{white-space:nowrap;border-radius:999px;padding:6px 14px}
-#tabs button[aria-selected=true]{background:var(--ac);color:var(--acx);border-color:var(--ac);font-weight:600}
-.badge{display:inline-block;min-width:1.4em;margin-left:6px;padding:0 6px;border-radius:999px;background:var(--ok);color:#fff;font-size:.75rem;line-height:1.5}
-main{padding:16px 0 40px}
+#tabs{display:flex;gap:8px;overflow-x:auto;padding:3px 2px 5px;scrollbar-width:thin}
+@media(min-width:760px){#tabs{flex-wrap:wrap;overflow:visible}}
+#tabs button{display:inline-flex;align-items:center;gap:7px;white-space:nowrap;border-radius:10px;padding:8px 13px;border:1px solid var(--bd);background:var(--card);color:var(--mut);font-weight:500}
+#tabs button:hover{background:var(--hov);color:var(--tx)}
+#tabs button:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
+#tabs .ic{font-size:1.05em;line-height:1}
+#tabs button[aria-selected=true]{background:var(--ac);color:var(--acx);border-color:var(--ac);font-weight:700;transform:translateY(-1px);box-shadow:0 3px 0 rgba(0,0,0,.18),0 0 0 3px color-mix(in srgb,var(--ac) 32%,transparent)}
+.badge{display:inline-block;min-width:1.4em;padding:0 6px;border-radius:999px;background:var(--ok);color:#fff;font-size:.75rem;line-height:1.5;text-align:center}
+#tabs button[aria-selected=true] .badge{background:rgba(255,255,255,.3);color:inherit}
+.ph{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:0 0 14px}
+.ph h2{margin:0;flex:1;min-width:200px;font-size:1.35rem;border-left:6px solid var(--ac);padding-left:12px}
+.tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.pill{color:var(--ok);font-weight:600;font-size:.85rem}
+main{padding:26px 0 40px}
 .card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:14px 16px;margin-bottom:14px}
 .card h2{font-size:1rem;margin:0 0 4px}
 .card .gd{margin:0 0 8px;color:var(--mut);font-size:.9rem}
@@ -67,7 +76,7 @@ footer p{margin:4px 0}
   <h1 id="h1">Gerador de <code>autounattend.xml</code></h1>
   <p class="sub" id="sub">Configure o Windows 10/11 por separadores (instalação, conta, privacidade, performance, tema, apps…) com opções inspiradas no Winhance. Tudo corre no browser; nada é enviado para lado nenhum.</p>
   <div class="bar">
-    <button id="b-rec" title="Aplica uma seleção equilibrada de otimizações">Recomendado</button>
+    <button id="b-rec" title="Aplica uma seleção equilibrada de otimizações">Recomendado (todos)</button>
     <button id="b-gam" title="Foco em desempenho e jogos">Gaming</button>
     <button id="b-min" title="Desmarca todos os tweaks">Limpar tweaks</button>
     <span class="sp"></span>
@@ -101,6 +110,9 @@ const T=(id,label,desc,fx,def=false,x={})=>({id,type:'toggle',label,desc,fx,def,
 const SEL=(id,label,desc,opts,def,fx,x={})=>({id,type:'select',label,desc,opts,def,fx,...x});
 const TXT=(id,label,desc,def='',x={})=>({id,type:x.pw?'password':'text',label,desc,def,...x});
 const NOCH=['','Não alterar'];
+function randName(){const c='ABCDEFGHJKLMNPQRSTUVWXYZ23456789',b=new Uint8Array(7);
+ (typeof crypto!=='undefined'&&crypto.getRandomValues)?crypto.getRandomValues(b):b.forEach((_,i)=>b[i]=Math.floor(Math.random()*256));
+ return 'PC-'+[...b].map(x=>c[x%32]).join('')}
 
 /* ---------- separador Windows (instalação) ---------- */
 const tWin={id:'windows',title:'Windows',groups:[
@@ -144,7 +156,9 @@ const tConta={id:'conta',title:'Conta de utilizador',groups:[
   T('autoLogon','Iniciar sessão automaticamente uma vez','Útil para correr os scripts do primeiro arranque sem intervenção.',null,false,{show:isLocal}),
   T('pwNever','Palavra-passe que nunca expira','Aplicado no primeiro início de sessão (requer conta de administrador).',null,false,{show:isLocal})]},
  {title:'Computador',opts:[
-  TXT('pcName','Nome do computador','Vazio = automático. Máx. 15 caracteres, sem espaços.',''),
+  SEL('pcMode','Nome do computador','«Aleatório» pede ao Windows para gerar um nome único em cada instalação.',[['auto','Automático (predefinição do Windows)'],['random','Aleatório (gerado pelo Windows)'],['custom','Personalizado']],'auto'),
+  TXT('pcName','Nome personalizado','Máx. 15 caracteres: letras, números e hífens.','',{show:s=>s.pcMode==='custom'}),
+  {id:'pcGen',type:'button',label:'Gerar nome aleatório',desc:'Preenche o campo com um nome aleatório (fica fixo neste XML).',def:null,show:s=>s.pcMode==='custom',run:()=>{S.pcName=randName()}},
   TXT('owner','Proprietário registado',null,''),
   TXT('org','Organização',null,'')]},
  {title:'Âmbito das personalizações',opts:[
@@ -319,9 +333,26 @@ const tGen={id:'gerar',title:'Gerar XML',groups:[]};
 
 const tabs=[tWin,tConta,tPriv,tPerf,tpw,tUpd,tNot,tTema,tBarra,tIni,tExp,tApps,tSoft,tGen];
 
-/* ---------- predefinições ---------- */
+/* ---------- recomendado por separador ---------- */
+const REC={
+ windows:{on:['bpTpm','bpSb','bpRam','bpCpu','bpSto','bpDsk','offline','nro','hideEula','hideOem','hideOnline','hideWifi'],off:['wipe'],set:{protect:'3'}},
+ conta:{set:{scope:'default'}},
+ privacidade:{on:['telem','adId','errRep','web','copilot','recall','activity','consumer','widgets']},
+ performance:{on:['gmode','dvr','prio','bgapps']},
+ energia:{on:['hiber'],set:{plan:'high'}},
+ atualizacoes:{on:['noReboot','doff']},
+ notificacoes:{on:['tips','lockTips','welcome']},
+ tema:{set:{theme:'dark'}},
+ barra:{on:['tbTask','tbWid','tbChat','tbCop'],set:{tbAlign:'0'}},
+ iniciar:{on:['stIris','stWeb']},
+ explorador:{on:['exExt','exHid','exCtx','exRecent','exSync'],set:{exLaunch:'1'}},
+ apps:{on:['od','ax_Microsoft.BingNews','ax_Microsoft.BingWeather','ax_Microsoft.GetHelp','ax_Microsoft.Getstarted','ax_Microsoft.MicrosoftOfficeHub','ax_Microsoft.MicrosoftSolitaireCollection','ax_Microsoft.WindowsFeedbackHub','ax_Microsoft.YourPhone','ax_Clipchamp.Clipchamp','ax_Microsoft.Copilot','ax_Microsoft.549981C3F5F10']}
+};
+/* ---------- predefinições globais ---------- */
+const recAll={on:[],set:{}};
+for(const[k,r]of Object.entries(REC)){if(k==='windows'||k==='conta')continue;recAll.on.push(...(r.on||[]));Object.assign(recAll.set,r.set||{})}
 const PRESETS={
- rec:{on:['telem','adId','errRep','web','copilot','recall','activity','consumer','widgets','gmode','dvr','prio','bgapps','hiber','noReboot','doff','tips','lockTips','welcome','exExt','exHid','exCtx','tbTask','tbWid','tbChat','tbCop','stIris','stWeb','exRecent','exSync','od','ax_Microsoft.BingNews','ax_Microsoft.BingWeather','ax_Microsoft.GetHelp','ax_Microsoft.Getstarted','ax_Microsoft.MicrosoftOfficeHub','ax_Microsoft.MicrosoftSolitaireCollection','ax_Microsoft.WindowsFeedbackHub','ax_Microsoft.YourPhone','ax_Clipchamp.Clipchamp','ax_Microsoft.Copilot','ax_Microsoft.549981C3F5F10'],set:{theme:'dark',tbAlign:'0',exLaunch:'1',plan:'high'}},
+ rec:recAll,
  gam:{on:['telem','hags','gmode','dvr','xbar','mm','mouse','prio','visfx','bgapps','sysmain','hiber','fast','usbss','noReboot','noDrv','tips','toast','bootSnd'],set:{plan:'ultimate',theme:'dark'}}
 };
 /* ---------- English (en): keys are the Portuguese source strings ---------- */
@@ -642,6 +673,24 @@ Object.assign(EN,{
  'Um ID do winget por linha (ex.: 7zip.7zip). Precisa de internet; a rede é reativada antes. Pode importar o winget-apps.json gerado pelo Programas.cmd.':'One winget ID per line (e.g. 7zip.7zip). Requires internet; the network is re-enabled first. You can import the winget-apps.json produced by Programas.cmd.',
  'IDs de pacotes winget':'winget package IDs',
 });
+Object.assign(EN,{
+ '«Aleatório» pede ao Windows para gerar um nome único em cada instalação.':'"Random" asks Windows to generate a unique name on every installation.',
+ 'Automático (predefinição do Windows)':'Automatic (Windows default)',
+ 'Aleatório (gerado pelo Windows)':'Random (generated by Windows)',
+ 'Personalizado':'Custom',
+ 'Nome personalizado':'Custom name',
+ 'Máx. 15 caracteres: letras, números e hífens.':'Max. 15 characters: letters, digits and hyphens.',
+ 'Gerar nome aleatório':'Generate random name',
+ 'Preenche o campo com um nome aleatório (fica fixo neste XML).':'Fills the field with a random name (it stays fixed in this XML).',
+ 'Nome personalizado do computador vazio: será usado o nome automático.':'Custom computer name is empty: the automatic name will be used.',
+});
+Object.assign(EN,{
+ 'Repor separador':'Reset tab',
+ 'Recomendado aplicado':'Recommended applied',
+ 'Aplica as opções recomendadas só neste separador':'Applies the recommended options to this tab only',
+ 'Repõe as opções deste separador para os valores iniciais':'Resets this tab\'s options to their default values',
+});
+EN['Recomendado (todos)']='Recommended (all tabs)';
 DICTS.en=EN;
 /* ---------- estado ---------- */
 let S={},cur='windows';
@@ -673,12 +722,48 @@ function el(tag,a={},...kids){
  for(const c of kids.flat())if(c!=null)e.append(c);
  return e;
 }
-function renderTabs(){
+const ICONS={windows:'🪟',conta:'👤',privacidade:'🔒',performance:'⚡',energia:'🔋',atualizacoes:'🔄',notificacoes:'🔔',tema:'🎨',barra:'📌',iniciar:'🧭',explorador:'📁',apps:'🧩',software:'📦',gerar:'📄'};
+function tabKey(e){
+ const k=e.key;if(k!=='ArrowLeft'&&k!=='ArrowRight'&&k!=='Home'&&k!=='End')return;
+ e.preventDefault();
+ let i=tabs.findIndex(t=>t.id===cur);
+ i=k==='Home'?0:k==='End'?tabs.length-1:(i+(k==='ArrowRight'?1:-1)+tabs.length)%tabs.length;
+ cur=tabs[i].id;refresh(true);
+ const b=document.getElementById('tab-'+cur);if(b)b.focus();
+}
+function renderTabs(scroll){
  const box=$('#tabs');box.innerHTML='';
  for(const t of tabs){
-  const n=t.id==='gerar'?0:count(t);
-  box.append(el('button',{role:'tab','aria-selected':String(t.id===cur),onclick:()=>{cur=t.id;refresh(true)}},tr(t.title),n?el('span',{class:'badge',text:n}):null));
+  const n=t.id==='gerar'?0:count(t),sel=t.id===cur;
+  box.append(el('button',{role:'tab',id:'tab-'+t.id,'aria-selected':String(sel),'aria-current':sel?'page':null,tabindex:sel?'0':'-1',onclick:()=>{cur=t.id;refresh(true)},onkeydown:tabKey},
+   el('span',{class:'ic','aria-hidden':'true',text:ICONS[t.id]||''}),tr(t.title),n?el('span',{class:'badge',text:n}):null));
  }
+ const b=box.querySelector('[aria-selected=true]');
+ if(scroll&&b&&b.scrollIntoView)b.scrollIntoView({inline:'center',block:'nearest'});
+}
+/* recomendado / repor por separador */
+function applyTab(t,rec){
+ for(const g of t.groups)for(const o of g.opts){
+  if(o.type==='button')continue;
+  if(!rec||tweakOpt(o))S[o.id]=o.def;
+ }
+ if(rec){const r=REC[t.id]||{};for(const id of r.on||[])if(id in S)S[id]=true;for(const id of r.off||[])if(id in S)S[id]=false;Object.assign(S,r.set||{})}
+ save();refresh();
+}
+function isRec(t){
+ const r=REC[t.id];if(!r)return false;
+ return (r.on||[]).every(id=>S[id]===true)&&(r.off||[]).every(id=>S[id]===false)&&Object.entries(r.set||{}).every(([k,v])=>S[k]===v);
+}
+function panelHead(t){
+ const tools=el('div',{class:'tools'});
+ if(t.id!=='gerar'){
+  if(REC[t.id]){
+   if(isRec(t))tools.append(el('span',{class:'pill',text:'✓ '+tr('Recomendado aplicado')}));
+   tools.append(el('button',{class:'pri',title:tr('Aplica as opções recomendadas só neste separador'),onclick:()=>applyTab(t,true)},tr('Recomendado')));
+  }
+  tools.append(el('button',{title:tr('Repõe as opções deste separador para os valores iniciais'),onclick:()=>applyTab(t,false)},tr('Repor separador')));
+ }
+ return el('div',{class:'ph'},el('h2',{text:(ICONS[t.id]||'')+' '+tr(t.title)}),tools);
 }
 function field(o){
  const v=S[o.id];
@@ -688,6 +773,7 @@ function field(o){
   i.checked=!!v;
   return el('label',{class:'opt'+(o.danger?' danger':'')},i,head);
  }
+ if(o.type==='button')return el('div',{class:'row'},head,el('button',{onclick:()=>{o.run();save();refresh()}},tr(o.label)));
  let inp;
  if(o.type==='select'){
   inp=el('select',{onchange:e=>{S[o.id]=e.target.value;save();refresh()}},o.opts.map(([a,b])=>el('option',{value:a,text:o.raw?b:tr(b)})));
@@ -705,6 +791,7 @@ function field(o){
 function renderPanel(){
  const p=$('#panel');p.innerHTML='';
  const t=tabs.find(x=>x.id===cur);
+ p.append(panelHead(t));
  if(t.id==='gerar')return renderGen(p);
  for(const g of t.groups){
   const opts=g.opts.filter(o=>!o.show||o.show(S));
@@ -730,7 +817,7 @@ function softExtras(){
   el('div',{class:'acts'},el('button',{onclick:()=>imp.click()},tr('Importar winget-apps.json')),imp));
 }
 function refresh(keepTop){
- const y=window.scrollY;renderTabs();renderPanel();
+ const y=window.scrollY;renderTabs(keepTop);renderPanel();
  window.scrollTo(0,keepTop?0:y);
 }
 /* ---------- gerador de scripts e XML ---------- */
@@ -833,7 +920,11 @@ function build(){
  if(sc.hasSys)spc.push('powershell -NoProfile -ExecutionPolicy Bypass -File C:\\ProgramData\\WinTweaks\\system.ps1');
  if(spc.length)sp.push(...comp('Microsoft-Windows-Deployment',rs(spc)));
  const spShell=[];
- if(S.pcName){spShell.push(`<ComputerName>${esc(S.pcName)}</ComputerName>`);if(!/^[A-Za-z0-9-]{1,15}$/.test(S.pcName))notes.push(['w','Nome do computador inválido: use até 15 letras, números ou hífens.'])}
+ if(S.pcMode==='random')spShell.push('<ComputerName>*</ComputerName>');
+ else if(S.pcMode==='custom'){
+  if(S.pcName){spShell.push(`<ComputerName>${esc(S.pcName)}</ComputerName>`);if(!/^[A-Za-z0-9-]{1,15}$/.test(S.pcName))notes.push(['w','Nome do computador inválido: use até 15 letras, números ou hífens.'])}
+  else notes.push(['w','Nome personalizado do computador vazio: será usado o nome automático.']);
+ }
  if(S.owner)spShell.push(`<RegisteredOwner>${esc(S.owner)}</RegisteredOwner>`);
  if(S.org)spShell.push(`<RegisteredOrganization>${esc(S.org)}</RegisteredOrganization>`);
  if(S.tz)spShell.push(`<TimeZone>${esc(S.tz)}</TimeZone>`);
