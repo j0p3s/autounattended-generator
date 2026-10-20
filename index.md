@@ -13,6 +13,7 @@ Create a Windows 10/11 `autounattend.xml` answer file by picking options in tabs
 - **User account:** automatic local account, computer name, one-time auto-logon.
 - **Optimize:** privacy and security, performance and gaming, power, updates, notifications and sound.
 - **Customize:** theme, taskbar, Start menu, File Explorer.
+- **Debloat:** one-click levels (Minimal, Recommended, ULTIMATE) for removing bloatware, with every item adjustable.
 - **Apps:** remove built-in Windows apps, optional features and OneDrive.
 - **Software:** install programs with winget on first logon.
 
@@ -23,7 +24,7 @@ Create a Windows 10/11 `autounattend.xml` answer file by picking options in tabs
 3. Copy the file to the root of your Windows installation USB drive, next to `setup.exe`.
 4. Boot from the USB drive and install Windows.
 
-> The generator is in English by default; use the language menu in its top bar to switch to Portuguese.
+> The generator starts in English (US); use the language menu in its top bar to switch language (Portuguese is included).
 
 ## Read before using
 
