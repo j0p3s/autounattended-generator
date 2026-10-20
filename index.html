@@ -116,6 +116,7 @@ footer p{margin:4px 0}
 <script>
 'use strict';
 /* ---------- data helpers ---------- */
+const GEOS=[['','Do not change'],['193','Portugal'],['32','Brazil'],['217','Spain'],['84','France'],['94','Germany'],['242','United Kingdom'],['244','United States']];
 const LANGS=[['pt-PT','Português (Portugal)'],['pt-BR','Português (Brasil)'],['en-US','English (US)'],['en-GB','English (UK)'],['es-ES','Español (España)'],['fr-FR','Français (France)'],['de-DE','Deutsch (Deutschland)']];
 const KBDS=[['0816:00000816','Portuguese (Portugal)'],['0416:00000416','Portuguese (Brazil ABNT2)'],['0409:00000409','English (US)'],['0809:00000809','English (UK)'],['0c0a:0000040a','Spanish (Spain)'],['040c:0000040c','French'],['0407:00000407','German']];
 const TZS=[['','Ask / default'],['GMT Standard Time','Lisbon / London (GMT)'],['W. Europe Standard Time','Western Europe (Berlin, Paris…)'],['Central Europe Standard Time','Central Europe'],['Azores Standard Time','Azores'],['E. South America Standard Time','Brasília'],['Eastern Standard Time','US Eastern'],['Pacific Standard Time','US Pacific'],['UTC','UTC']];
@@ -138,6 +139,7 @@ const tWin={id:'windows',title:'Windows',groups:[
  {title:'Language and region',opts:[
   SEL('lang','Windows language','Your ISO must include this language.',LANGS,'pt-PT',null,{raw:true}),
   SEL('userLoc','Regional format','Dates, numbers and currency. Leave as is to follow the Windows language, or choose another one (e.g. English Windows with Portuguese dates).',[['','Same as Windows language'],...LANGS],''),
+  SEL('homeLoc','Country or region (home location)','Used by the Microsoft Store and regional content. Set at first sign-in. Useful when Windows is installed in English but you live elsewhere.',GEOS,''),
   SEL('kbd','Keyboard',null,KBDS,'0816:00000816'),
   SEL('tz','Time zone',null,TZS,'GMT Standard Time')]},
  {title:'Edition and license',opts:[
@@ -378,6 +380,9 @@ const WG=['Google.Chrome','Mozilla.Firefox','Brave.Brave','7zip.7zip','VideoLAN.
 const tSoft={id:'software',title:'Software (winget)',groups:[
  {title:'Install at first sign-in',gd:'One winget ID per line (e.g. 7zip.7zip). Requires internet; the network is re-enabled first. You can import the winget-apps.json produced by Programas.cmd.',opts:[
   {id:'wg',type:'textarea',label:'winget package IDs',desc:null,def:''}]},
+ {title:'NVIDIA driver',gd:'Runs a silent NVIDIA installer at first sign-in, if the file exists. Put the unpacked package (e.g. from NVCleanstall) on the USB drive in sources\\$OEM$\\$1\\Drivers\\NVIDIA: Windows Setup copies it to C:\\Drivers\\NVIDIA.',opts:[
+  T('nvOn','Install the NVIDIA driver','Runs the installer with -s -noreboot (silent, no restart).',null,false),
+  TXT('nvPath','Installer path',null,'C:\\Drivers\\NVIDIA\\setup.exe',{show:s=>s.nvOn})]},
  {title:'Extra registry settings',gd:'Advanced. One setting per line: HIVE\\Path|Name|TYPE|Data. HIVE is HKLM or HKCU (HKCU follows the "per-user tweaks" scope in the User account tab). Use (Default) as the name for the default value. Imported files put here the registry settings that match no option of this page.',opts:[
   {id:'xreg',type:'textarea',label:'Registry settings',desc:null,def:'',ph:'HKLM\\SOFTWARE\\Policies\\Microsoft\\Edge|HideFirstRunExperience|REG_DWORD|1\nHKCU\\Control Panel\\Desktop|DragFullWindows|REG_SZ|1'}]}
 ]};
@@ -603,6 +608,15 @@ const PT={
  "Language and region":"Idioma e região",
  "Windows language":"Idioma do Windows",
  "Regional format":"Formato regional",
+ "Country or region (home location)":"País ou região (localização)",
+ "Do not change":"Não alterar",
+ "Used by the Microsoft Store and regional content. Set at first sign-in. Useful when Windows is installed in English but you live elsewhere.":"Usado pela Microsoft Store e conteúdos regionais. Definido no primeiro início de sessão. Útil quando o Windows é instalado em inglês mas vives noutro país.",
+ "Portugal":"Portugal","Brazil":"Brasil","Spain":"Espanha","France":"França","Germany":"Alemanha","United Kingdom":"Reino Unido","United States":"Estados Unidos",
+ "NVIDIA driver":"Driver NVIDIA",
+ "Install the NVIDIA driver":"Instalar o driver NVIDIA",
+ "Installer path":"Caminho do instalador",
+ "Runs the installer with -s -noreboot (silent, no restart).":"Executa o instalador com -s -noreboot (silencioso, sem reiniciar).",
+ "Runs a silent NVIDIA installer at first sign-in, if the file exists. Put the unpacked package (e.g. from NVCleanstall) on the USB drive in sources\\$OEM$\\$1\\Drivers\\NVIDIA: Windows Setup copies it to C:\\Drivers\\NVIDIA.":"Executa um instalador NVIDIA silencioso no primeiro início de sessão, se o ficheiro existir. Coloca o pacote extraído (ex.: do NVCleanstall) na pen USB em sources\\$OEM$\\$1\\Drivers\\NVIDIA: o Setup do Windows copia-o para C:\\Drivers\\NVIDIA.",
  "Same as Windows language":"Igual ao idioma do Windows",
  "Dates, numbers and currency. Leave as is to follow the Windows language, or choose another one (e.g. English Windows with Portuguese dates).":"Datas, números e moeda. Deixe como está para seguir o idioma do Windows ou escolha outro (ex.: Windows em inglês com datas portuguesas).",
  "Your ISO must include this language.":"O ISO tem de incluir este idioma.",
@@ -1287,6 +1301,7 @@ function collect(){
  }
  return c;
 }
+const ODRUN='reg delete "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run" /v "OneDriveSetup" /f | Out-Null';
 const regLine=(it,root)=>`reg add "${root}\\${it.p}" ${it.n===null?'/ve':'/v "'+it.n+'"'} /t ${it.t} /d ${it.t===Z||it.t==='REG_EXPAND_SZ'?'"'+it.d+'"':it.d} /f | Out-Null`;
 
 function scripts(c){
@@ -1296,33 +1311,46 @@ function scripts(c){
  /* system script (specialize pass, runs as SYSTEM) */
  const s=head('system');
  if(hklm.length){s.push('# Registry (HKLM)');hklm.forEach(r=>s.push(regLine(r,'HKLM')));s.push('')}
- if(def&&hkcu.length){
+ if(def&&(hkcu.length||S.od)){
   s.push('# Default profile: applies to all new users','reg load HKU\\WH_DEF C:\\Users\\Default\\NTUSER.DAT | Out-Null');
   hkcu.forEach(r=>s.push(regLine(r,'HKU\\WH_DEF')));
+  if(S.od)s.push('# Prevent OneDrive from reinstalling itself at first logon',ODRUN.replace('HKCU','HKU\\WH_DEF'));
   s.push('[GC]::Collect(); [GC]::WaitForPendingFinalizers(); Start-Sleep 1','reg unload HKU\\WH_DEF | Out-Null','');
  }
  if(S.net35)s.push('# .NET Framework 3.5',"foreach ($d in (Get-PSDrive -PSProvider FileSystem)) { $p = Join-Path $d.Root 'sources\\sxs'; if (Test-Path $p) { dism /online /enable-feature /featurename:NetFx3 /All /Source:$p /LimitAccess | Out-Null; break } }",'');
  if(c.ps.length)s.push('# Commands',...c.ps,'');
  if(c.appx.length)s.push('# Remove apps',`$apps = @(${c.appx.map(n=>"'"+psq(n)+"'").join(', ')})`,'foreach ($n in $apps) {','  Get-AppxPackage -AllUsers -Name $n | Remove-AppxPackage -AllUsers','  Get-AppxProvisionedPackage -Online | Where-Object { $_.DisplayName -like $n } | Remove-AppxProvisionedPackage -Online | Out-Null','}','');
  s.push('Stop-Transcript | Out-Null');
- const hasSys=!!(hklm.length||(def&&hkcu.length)||S.net35||c.ps.length||c.appx.length);
+ const hasSys=!!(hklm.length||(def&&(hkcu.length||S.od))||S.net35||c.ps.length||c.appx.length);
  /* first sign-in script (runs as the user) */
  const L=head('firstlogon');
- if(!def&&hkcu.length){
+ const geo=GEOS.find(g=>g[0]&&g[0]===S.homeLoc),region=!!(geo||S.userLoc);
+ if(region){
+  L.push('# Region'+(geo?': '+geo[1]:''));
+  if(geo)L.push('Set-WinHomeLocation -GeoId '+geo[0]);
+  if(S.userLoc)L.push('Set-Culture '+S.userLoc);
+  L.push('');
+ }
+ if(!def&&(hkcu.length||S.od)){
   L.push('# Registry (HKCU)');hkcu.forEach(r=>L.push(regLine(r,'HKCU')));
+  if(S.od)L.push(ODRUN);
   L.push('Stop-Process -Name explorer -Force','');
  }
  if(local&&S.pwNever&&S.accName)L.push(`Set-LocalUser -Name '${psq(S.accName)}' -PasswordNeverExpires $true`,'');
  if(c.logon.length)L.push('# Commands',...c.logon,'');
+ if(S.nvOn&&S.nvPath){
+  L.push('# NVIDIA driver (silent installer copied to this path beforehand)',`$s = '${psq(S.nvPath)}'`,"if (Test-Path $s) { Start-Process $s -ArgumentList '-s','-noreboot' -Wait }",'');
+ }
  if(ids.length){
-  L.push('# winget: wait for network and install',
-   'for ($i = 0; $i -lt 30 -and -not (Test-Connection 1.1.1.1 -Count 1 -Quiet); $i++) { Start-Sleep 2 }',
+  L.push('# winget: wait for network (up to ~3 min) and for winget (up to ~10 min), then install',
+   'for ($i = 0; $i -lt 90 -and -not (Test-Connection 1.1.1.1 -Count 1 -Quiet); $i++) { Start-Sleep 2 }',
    `$ids = @(${ids.map(i=>"'"+i+"'").join(', ')})`,
-   'for ($i = 0; $i -lt 30 -and -not (Get-Command winget -ErrorAction SilentlyContinue); $i++) { Start-Sleep 10 }',
-   'foreach ($id in $ids) { winget install --id $id -e --silent --accept-package-agreements --accept-source-agreements }','');
+   'for ($i = 0; $i -lt 60 -and -not (Get-Command winget -ErrorAction SilentlyContinue); $i++) { Start-Sleep 10 }',
+   'winget source update | Out-Null',
+   'foreach ($id in $ids) { winget install --id $id -e --source winget --silent --accept-package-agreements --accept-source-agreements }','');
  }
  L.push('Stop-Transcript | Out-Null');
- const hasLogon=!!((!def&&hkcu.length)||(local&&S.pwNever&&S.accName)||c.logon.length||ids.length);
+ const hasLogon=!!(region||(S.nvOn&&S.nvPath)||(!def&&(hkcu.length||S.od))||(local&&S.pwNever&&S.accName)||c.logon.length||ids.length);
  return {sys:s.join('\n'),logon:L.join('\n'),hasSys,hasLogon};
 }
 
@@ -1643,6 +1671,8 @@ function mapAnswerFile(doc){
   else if(/^reg add "HKU\\WH_DEF/.test(ln))hasDef=true;
   else if(sg.startsWith('HKCU|')&&fn==='firstlogon.ps1')hasUser=true;
  }
+ if(sysT.includes('reg load HKU\\WH_DEF'))hasDef=true;
+ if(logT.includes(ODRUN))hasUser=true;
  N.scope=!hasDef&&hasUser?'first':'default';
  const am=/^\$apps = @\((.*)\)$/m.exec(sysT),appx=new Set(am?psList(am[1]):[]);
  const sig=it=>it.h+'|'+it.p+'|'+(it.n===null?'':it.n)+'|'+it.t+'|'+String(it.d);
@@ -1683,6 +1713,12 @@ function mapAnswerFile(doc){
  N.noIpv6=logT.includes('Disable-NetAdapterBinding');
  N.netPriv=logT.includes('Set-NetConnectionProfile -NetworkCategory Private');
  N.rdp=regSet.has('HKLM|SYSTEM\\CurrentControlSet\\Control\\Terminal Server|fDenyTSConnections|REG_DWORD|0')&&sysL.has("Enable-NetFirewallRule -Group '@FirewallAPI.dll,-28752'");
+ {
+  const cm=/^Set-Culture ([\w-]+)$/m.exec(logT);if(cm&&LANGS.some(l=>l[0]===cm[1]))N.userLoc=cm[1];
+  const gm=/^Set-WinHomeLocation -GeoId (\d+)$/m.exec(logT);if(gm&&GEOS.some(g=>g[0]===gm[1]))N.homeLoc=gm[1];
+  const nm=/^\$s = '((?:[^']|'')*)'\r?\nif \(Test-Path \$s\) \{ Start-Process \$s -ArgumentList '-s','-noreboot' -Wait \}$/m.exec(logT);
+  if(nm){N.nvOn=true;N.nvPath=unq(nm[1])}
+ }
  /* registry settings that belong to no option are kept in the "extra registry settings" box */
  {
   const old=S;let used;
