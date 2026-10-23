@@ -84,6 +84,11 @@ summary{cursor:pointer;font-weight:600}
 .imp ul{margin:6px 0 0;padding-left:20px}
 .imp li{margin:3px 0;word-break:break-word}
 .imp code{font-size:.85em}
+.card h3{font-size:.95rem;margin:16px 0 4px}
+.card ol,.card ul.plain{margin:6px 0;padding-left:22px}
+.card ol li,.card ul.plain li{margin:5px 0}
+.card .warnbox{border-left:4px solid var(--warn);background:var(--code);color:var(--codetx);border-radius:6px;padding:8px 12px;margin:10px 0;font-size:.9rem}
+.card pre.cmd{max-height:none;white-space:pre-wrap;word-break:break-all}
 footer{border-top:1px solid var(--bd);color:var(--mut);font-size:.85rem;padding:16px 0 28px}
 footer p{margin:4px 0}
 </style>
@@ -587,7 +592,7 @@ const PT={
  "Invalid XML: ":"XML inválido: ",
  "Well-formed XML":"XML bem formado",
  "Download autounattend.xml":"Descarregar autounattend.xml",
- "Place the file in the root of the Windows installation USB drive (next to setup.exe) or add it to the ISO and save a new bootable ISO (see the README, section Adding the file to an ISO).":"Coloque o ficheiro na raiz do pendrive de instalação do Windows (junto a setup.exe) ou adicione-o ao ISO e guarde um novo ISO de arranque (veja o README, secção Adding the file to an ISO).",
+ "Place the file in the root of the Windows installation USB drive (next to setup.exe), or add it to the ISO and save a new bootable ISO (step-by-step guide below).":"Coloque o ficheiro na raiz do pendrive de instalação do Windows (junto a setup.exe), ou adicione-o ao ISO e guarde um novo ISO de arranque (guia passo a passo abaixo).",
  "Warning: ":"Atenção: ",
  "Preview":"Pré-visualização",
  "system.ps1 (specialize pass, runs as SYSTEM)":"system.ps1 (fase specialize, como SYSTEM)",
@@ -1042,6 +1047,44 @@ Object.assign(PT,{
 "The account password was stored encoded in the file; it will be written in plain text.":"A palavra-passe da conta estava codificada no ficheiro; será escrita em texto simples.",
 "The imported file has settings that this page does not support; they are not in this XML (see the import report at the top of the page).":"O ficheiro importado tem definições que esta página não suporta; não estão neste XML (veja o relatório de importação no topo da página)."
 });
+Object.assign(PT,{
+ "Copy":"Copiar",
+ "Add it to an ISO and save a bootable ISO":"Adicionar a um ISO e guardar um ISO de arranque",
+ "Skip this if you install from a USB drive: just copy the file to its root. Use these steps to get one ISO that already contains the answer file, for example for a virtual machine or a ready-made image.":"Ignore isto se instala a partir de um pendrive: basta copiar o ficheiro para a raiz. Use estes passos para obter um ISO que já contém o ficheiro de respostas, por exemplo para uma máquina virtual ou uma imagem pronta a usar.",
+ "Windows Setup looks for autounattend.xml in the root of the installation media, with exactly that name (not autounattend.xml.txt).":"O Setup do Windows procura o autounattend.xml na raiz do suporte de instalação, com exatamente esse nome (não autounattend.xml.txt).",
+ "What goes where":"O que vai para onde",
+ "the ISO root, next to setup.exe (always)":"a raiz do ISO, junto a setup.exe (sempre)",
+ "only for the NVIDIA driver option; Windows Setup copies it to C:\\Drivers\\NVIDIA":"só para a opção do driver NVIDIA; o Setup do Windows copia-o para C:\\Drivers\\NVIDIA",
+ "Method 1: oscdimg (recommended)":"Método 1: oscdimg (recomendado)",
+ "Install the Windows ADK (select only Deployment Tools) once. Then open Deployment and Imaging Tools Environment from the Start menu as administrator: oscdimg is already on the path there.":"Instale uma vez o Windows ADK (selecione só Deployment Tools). Depois abra Deployment and Imaging Tools Environment no menu Iniciar como administrador: o oscdimg já está no caminho aí.",
+ "Right-click the original Windows ISO, choose Mount, and copy everything to a working folder (replace X: with the drive letter of the mounted ISO). You can also extract the ISO with 7-Zip. You need at least 10 GB free.":"Clique com o botão direito no ISO original do Windows, escolha Montar e copie tudo para uma pasta de trabalho (troque X: pela letra da unidade do ISO montado). Também pode extrair o ISO com o 7-Zip. Precisa de pelo menos 10 GB livres.",
+ "Copy autounattend.xml to C:\\ISO, the folder that contains setup.exe. Optional, for the NVIDIA option: copy the unpacked driver to C:\\ISO\\sources\\$OEM$\\$1\\Drivers\\NVIDIA and create the $OEM$ folders if they do not exist, keeping the names exactly as written.":"Copie o autounattend.xml para C:\\ISO, a pasta que contém o setup.exe. Opcional, para a opção NVIDIA: copie o driver extraído para C:\\ISO\\sources\\$OEM$\\$1\\Drivers\\NVIDIA e crie as pastas $OEM$ se não existirem, mantendo os nomes exatamente como estão.",
+ "Check that C:\\ISO still contains boot, efi, sources, bootmgr and setup.exe, and now autounattend.xml.":"Confirme que C:\\ISO continua a ter boot, efi, sources, bootmgr e setup.exe, e agora também o autounattend.xml.",
+ "Build the bootable ISO with the command below. It is saved outside C:\\ISO.":"Crie o ISO de arranque com o comando abaixo. É guardado fora de C:\\ISO.",
+ "The command below matches the architecture selected in the Windows tab (ARM64): ARM64 images boot only with UEFI, so there is a single boot entry.":"O comando abaixo corresponde à arquitetura escolhida no separador Windows (ARM64): as imagens ARM64 só arrancam com UEFI, por isso há uma única entrada de arranque.",
+ "The command below matches the architecture selected in the Windows tab: one boot entry for BIOS (legacy) and one for UEFI. The noprompt file skips the \"Press any key to boot from CD or DVD\" question, which is what you want for an unattended install.":"O comando abaixo corresponde à arquitetura escolhida no separador Windows: uma entrada de arranque para BIOS (legacy) e outra para UEFI. O ficheiro noprompt dispensa a pergunta \"Press any key to boot from CD or DVD\", o que convém numa instalação sem supervisão.",
+ "If efisys_noprompt.bin is missing in C:\\ISO\\efi\\microsoft\\boot, use efisys.bin: the only difference is that you must press a key at boot. When oscdimg ends it prints the size of the ISO and Done; on an error no usable ISO was made, so check the paths and that boot\\etfsboot.com and efi\\microsoft\\boot\\efisys*.bin exist.":"Se o efisys_noprompt.bin não existir em C:\\ISO\\efi\\microsoft\\boot, use o efisys.bin: a única diferença é que tem de carregar numa tecla no arranque. Quando o oscdimg termina mostra o tamanho do ISO e Done; se der erro não foi criado nenhum ISO utilizável, por isso confirme os caminhos e se existem boot\\etfsboot.com e efi\\microsoft\\boot\\efisys*.bin.",
+ "Method 2: a USB drive, without rebuilding the ISO":"Método 2: um pendrive, sem refazer o ISO",
+ "Write the original ISO to the USB drive with Rufus (or the Windows Media Creation Tool).":"Grave o ISO original no pendrive com o Rufus (ou com a Ferramenta de Criação de Multimédia do Windows).",
+ "Copy autounattend.xml to the root of the drive.":"Copie o autounattend.xml para a raiz da unidade.",
+ "Leave Rufus own \"Customize Windows installation\" options unticked: Rufus writes its own autounattend.xml in that case and it could replace yours.":"Deixe desmarcadas as opções \"Customize Windows installation\" do Rufus: nesse caso o Rufus escreve o seu próprio autounattend.xml, que pode substituir o seu.",
+ "With Ventoy you can copy the ISO built with oscdimg to the Ventoy drive and boot it from the menu.":"Com o Ventoy pode copiar o ISO criado com o oscdimg para a unidade Ventoy e arrancá-lo a partir do menu.",
+ "Save and test the ISO":"Guardar e testar o ISO",
+ "Keep the final ISO under a clear name, for example Win11_24H2_unattended.iso, and keep the original ISO untouched as the clean copy.":"Guarde o ISO final com um nome claro, por exemplo Win11_24H2_unattended.iso, e mantenha o ISO original intacto como cópia limpa.",
+ "Test it in a virtual machine first (Hyper-V, VirtualBox or VMware) and check that Setup does not ask the questions you automated. Test a UEFI and a BIOS machine if you will use both.":"Teste primeiro numa máquina virtual (Hyper-V, VirtualBox ou VMware) e confirme que o Setup não faz as perguntas que automatizou. Teste uma máquina UEFI e uma BIOS se for usar as duas.",
+ "Mount the new ISO and confirm that autounattend.xml is in the root.":"Monte o novo ISO e confirme que o autounattend.xml está na raiz.",
+ "To put it on a USB drive, write it with Rufus (GPT for UEFI PCs, MBR for BIOS PCs) or copy it to a Ventoy drive.":"Para o pôr num pendrive, grave-o com o Rufus (GPT para PCs UEFI, MBR para PCs BIOS) ou copie-o para uma unidade Ventoy.",
+ "Warning: with the automatic disk partitioning option, an unattended install erases disk 0 without asking as soon as the PC boots from this media. Label the ISO and the USB drive clearly and do not leave them connected when you restart a PC you want to keep.":"Atenção: com a opção de partição automática do disco, uma instalação sem supervisão apaga o disco 0 sem perguntar assim que o PC arranca deste suporte. Identifique bem o ISO e o pendrive e não os deixe ligados quando reiniciar um PC que quer manter.",
+ "Common problems":"Problemas comuns",
+ "Setup ignores the answer file: it is not in the root of the media, it is named autounattend.xml.txt (turn on File name extensions in File Explorer), or the XML is not valid. Generate it again and check the warnings above.":"O Setup ignora o ficheiro de respostas: não está na raiz do suporte, chama-se autounattend.xml.txt (ative Extensões de nomes de ficheiros no Explorador) ou o XML não é válido. Gere-o de novo e veja os avisos acima.",
+ "The ISO does not boot: it was built without the -bootdata part or a boot file was missing. Rebuild it with the command above.":"O ISO não arranca: foi criado sem a parte -bootdata ou faltava um ficheiro de arranque. Refaça-o com o comando acima.",
+ "It boots on UEFI but not on BIOS (or the reverse): a boot entry is missing. Use the two-entry command for x64.":"Arranca em UEFI mas não em BIOS (ou o contrário): falta uma entrada de arranque. Use o comando com duas entradas para x64.",
+ "It boots but asks to press a key: you used efisys.bin. Use efisys_noprompt.bin.":"Arranca mas pede para carregar numa tecla: usou o efisys.bin. Use o efisys_noprompt.bin.",
+ "oscdimg is not recognized: open Deployment and Imaging Tools Environment as administrator, or use the full path C:\\Program Files (x86)\\Windows Kits\\10\\Assessment and Deployment Kit\\Deployment Tools\\amd64\\Oscdimg\\oscdimg.exe.":"O oscdimg não é reconhecido: abra Deployment and Imaging Tools Environment como administrador ou use o caminho completo C:\\Program Files (x86)\\Windows Kits\\10\\Assessment and Deployment Kit\\Deployment Tools\\amd64\\Oscdimg\\oscdimg.exe.",
+ "The language or edition is rejected: the language, edition and architecture in the XML must exist in the ISO you used.":"O idioma ou a edição são rejeitados: o idioma, a edição e a arquitetura do XML têm de existir no ISO que usou.",
+ "The NVIDIA package is not found after the install: check that the folder is sources\\$OEM$\\$1\\Drivers\\NVIDIA at ISO level and that you copied the unpacked files, not a .zip.":"O pacote NVIDIA não é encontrado depois da instalação: confirme que a pasta é sources\\$OEM$\\$1\\Drivers\\NVIDIA ao nível do ISO e que copiou os ficheiros extraídos, não um .zip.",
+ "7-Zip and most archive tools can add files to an ISO but cannot make it bootable again: use oscdimg for the final ISO.":"O 7-Zip e a maioria das ferramentas de arquivo conseguem juntar ficheiros a um ISO mas não o tornam de novo de arranque: use o oscdimg para o ISO final.",
+});
 DICTS.pt=PT;
 /* ---------- state ---------- */
 let S={},cur='windows';
@@ -1470,6 +1513,67 @@ async function copyText(t,btn){
  }
  if(btn){const o=btn.textContent;btn.textContent=tr('Copied!');setTimeout(()=>btn.textContent=o,1400)}
 }
+/* ---------- ISO guide (shown on the Generate tab) ---------- */
+function isoCmd(arch){
+ const boot=arch==='arm64'
+  ?String.raw`-bootdata:1#pEF,e,b"C:\ISO\efi\microsoft\boot\efisys_noprompt.bin"`
+  :String.raw`-bootdata:2#p0,e,b"C:\ISO\boot\etfsboot.com"#pEF,e,b"C:\ISO\efi\microsoft\boot\efisys_noprompt.bin"`;
+ return 'oscdimg -m -o -u2 -udfver102 -lWIN_UNATTEND '+boot+String.raw` C:\ISO C:\Win_unattended.iso`;
+}
+function isoGuide(){
+ const T=tr;
+ const cmdBox=(txt)=>{const b=el('button',{type:'button'},T('Copy'));b.onclick=()=>copyText(txt,b);return el('div',{},el('pre',{class:'cmd',text:txt}),el('div',{class:'acts'},b))};
+ const arm=S.arch==='arm64';
+ return el('section',{class:'card',id:'isoGuide'},
+  el('h2',{text:T('Add it to an ISO and save a bootable ISO')}),
+  el('p',{class:'gd',text:T('Skip this if you install from a USB drive: just copy the file to its root. Use these steps to get one ISO that already contains the answer file, for example for a virtual machine or a ready-made image.')}),
+  el('p',{class:'hint',text:T('Windows Setup looks for autounattend.xml in the root of the installation media, with exactly that name (not autounattend.xml.txt).')}),
+
+  el('h3',{text:T('What goes where')}),
+  el('ul',{class:'plain'},
+   el('li',{},el('code',{text:'autounattend.xml'}),' → '+T('the ISO root, next to setup.exe (always)')),
+   el('li',{},el('code',{text:'sources\\$OEM$\\$1\\Drivers\\NVIDIA'}),' → '+T('only for the NVIDIA driver option; Windows Setup copies it to C:\\Drivers\\NVIDIA'))),
+
+  el('h3',{text:T('Method 1: oscdimg (recommended)')}),
+  el('ol',{},
+   el('li',{},T('Install the Windows ADK (select only Deployment Tools) once. Then open Deployment and Imaging Tools Environment from the Start menu as administrator: oscdimg is already on the path there.')),
+   el('li',{},T('Right-click the original Windows ISO, choose Mount, and copy everything to a working folder (replace X: with the drive letter of the mounted ISO). You can also extract the ISO with 7-Zip. You need at least 10 GB free.')),
+   el('li',{},T('Copy autounattend.xml to C:\\ISO, the folder that contains setup.exe. Optional, for the NVIDIA option: copy the unpacked driver to C:\\ISO\\sources\\$OEM$\\$1\\Drivers\\NVIDIA and create the $OEM$ folders if they do not exist, keeping the names exactly as written.')),
+   el('li',{},T('Check that C:\\ISO still contains boot, efi, sources, bootmgr and setup.exe, and now autounattend.xml.')),
+   el('li',{},T('Build the bootable ISO with the command below. It is saved outside C:\\ISO.'))),
+  cmdBox(String.raw`robocopy X: C:\ISO /E`),
+  el('p',{class:'hint',text:arm
+   ?T('The command below matches the architecture selected in the Windows tab (ARM64): ARM64 images boot only with UEFI, so there is a single boot entry.')
+   :T('The command below matches the architecture selected in the Windows tab: one boot entry for BIOS (legacy) and one for UEFI. The noprompt file skips the "Press any key to boot from CD or DVD" question, which is what you want for an unattended install.')}),
+  cmdBox(isoCmd(S.arch)),
+  el('p',{class:'hint',text:T('If efisys_noprompt.bin is missing in C:\\ISO\\efi\\microsoft\\boot, use efisys.bin: the only difference is that you must press a key at boot. When oscdimg ends it prints the size of the ISO and Done; on an error no usable ISO was made, so check the paths and that boot\\etfsboot.com and efi\\microsoft\\boot\\efisys*.bin exist.')}),
+
+  el('h3',{text:T('Method 2: a USB drive, without rebuilding the ISO')}),
+  el('ol',{},
+   el('li',{},T('Write the original ISO to the USB drive with Rufus (or the Windows Media Creation Tool).')),
+   el('li',{},T('Copy autounattend.xml to the root of the drive.')),
+   el('li',{},T('Leave Rufus own "Customize Windows installation" options unticked: Rufus writes its own autounattend.xml in that case and it could replace yours.'))),
+  el('p',{class:'hint',text:T('With Ventoy you can copy the ISO built with oscdimg to the Ventoy drive and boot it from the menu.')}),
+
+  el('h3',{text:T('Save and test the ISO')}),
+  el('ol',{},
+   el('li',{},T('Keep the final ISO under a clear name, for example Win11_24H2_unattended.iso, and keep the original ISO untouched as the clean copy.')),
+   el('li',{},T('Test it in a virtual machine first (Hyper-V, VirtualBox or VMware) and check that Setup does not ask the questions you automated. Test a UEFI and a BIOS machine if you will use both.')),
+   el('li',{},T('Mount the new ISO and confirm that autounattend.xml is in the root.')),
+   el('li',{},T('To put it on a USB drive, write it with Rufus (GPT for UEFI PCs, MBR for BIOS PCs) or copy it to a Ventoy drive.'))),
+  el('p',{class:'warnbox',text:T('Warning: with the automatic disk partitioning option, an unattended install erases disk 0 without asking as soon as the PC boots from this media. Label the ISO and the USB drive clearly and do not leave them connected when you restart a PC you want to keep.')}),
+
+  el('details',{},el('summary',{text:T('Common problems')}),
+   el('ul',{class:'plain'},
+    el('li',{text:T('Setup ignores the answer file: it is not in the root of the media, it is named autounattend.xml.txt (turn on File name extensions in File Explorer), or the XML is not valid. Generate it again and check the warnings above.')}),
+    el('li',{text:T('The ISO does not boot: it was built without the -bootdata part or a boot file was missing. Rebuild it with the command above.')}),
+    el('li',{text:T('It boots on UEFI but not on BIOS (or the reverse): a boot entry is missing. Use the two-entry command for x64.')}),
+    el('li',{text:T('It boots but asks to press a key: you used efisys.bin. Use efisys_noprompt.bin.')}),
+    el('li',{text:T('oscdimg is not recognized: open Deployment and Imaging Tools Environment as administrator, or use the full path C:\\Program Files (x86)\\Windows Kits\\10\\Assessment and Deployment Kit\\Deployment Tools\\amd64\\Oscdimg\\oscdimg.exe.')}),
+    el('li',{text:T('The language or edition is rejected: the language, edition and architecture in the XML must exist in the ISO you used.')}),
+    el('li',{text:T('The NVIDIA package is not found after the install: check that the folder is sources\\$OEM$\\$1\\Drivers\\NVIDIA at ISO level and that you copied the unpacked files, not a .zip.')}),
+    el('li',{text:T('7-Zip and most archive tools can add files to an ISO but cannot make it bootable again: use oscdimg for the final ISO.')}))));
+}
 function renderGen(p){
  const r=build();
  const doc=new DOMParser().parseFromString(r.xml,'application/xml');
@@ -1481,8 +1585,9 @@ function renderGen(p){
   el('h2',{text:'autounattend.xml'}),
   el('p',{class:'status '+(bad?'bad':'ok'),text:bad?tr('Invalid XML: ')+bad.textContent.slice(0,200):tr('Well-formed XML')}),
   el('div',{class:'acts'},el('button',{class:'pri',onclick:()=>download('autounattend.xml',r.xml,'application/xml')},tr('Download autounattend.xml')),copy),
-  el('p',{class:'hint',text:tr('Place the file in the root of the Windows installation USB drive (next to setup.exe) or add it to the ISO and save a new bootable ISO (see the README, section Adding the file to an ISO).')}),
+  el('p',{class:'hint',text:tr('Place the file in the root of the Windows installation USB drive (next to setup.exe), or add it to the ISO and save a new bootable ISO (step-by-step guide below).')}),
   nn.length?el('ul',{class:'notes'},nn.map(([k,t])=>el('li',{class:k==='w'?'w':''},(k==='w'?tr('Warning: '):'')+tr(t)))):null),
+  isoGuide(),
   el('section',{class:'card'},el('h2',{text:tr('Preview')}),el('pre',{text:r.xml}),
    r.hasSys?el('details',{},el('summary',{text:tr('system.ps1 (specialize pass, runs as SYSTEM)')}),el('pre',{text:r.sys})):null,
    r.hasLogon?el('details',{},el('summary',{text:tr('firstlogon.ps1 (first sign-in)')}),el('pre',{text:r.logon})):null));
