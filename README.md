@@ -26,10 +26,102 @@ Pick your settings in tabs (installation, user account, network, privacy, perfor
 1. Open the generator: the GitHub Pages site of this repository, or open `index.html` locally in any modern browser.
 2. Go through the tabs and choose your options.
 3. Open **Generate XML**, check the warnings, then click **Download autounattend.xml**.
-4. Place `autounattend.xml` in the root of your Windows installation USB drive (next to `setup.exe`), or inject it into your ISO.
-5. Boot from the USB drive and install Windows.
+4. Place `autounattend.xml` in the root of your Windows installation USB drive (next to `setup.exe`), or add it to your ISO and save a new bootable ISO (see [Adding the file to an ISO](#adding-the-file-to-an-iso-and-saving-a-bootable-iso)).
+5. Boot from the USB drive (or the new ISO) and install Windows.
 
 > The interface starts in English (US). Use the language menu in the top bar to switch language. The choice is remembered, and you can also link directly with `?lang=pt`.
+
+## Adding the file to an ISO and saving a bootable ISO
+
+You can skip this if you install from a USB drive: just copy `autounattend.xml` to its root (next to `setup.exe`). Use the steps below when you want **one ISO that already contains the answer file**, for example to install in a virtual machine or to keep a ready-made image.
+
+Windows Setup looks for `autounattend.xml` in the **root of the installation media**, so the file must end up there, with exactly that name (not `autounattend.xml.txt`).
+
+### What goes where
+
+| File or folder | Location inside the ISO | Needed for |
+| --- | --- | --- |
+| `autounattend.xml` | Root, next to `setup.exe` | Always |
+| `NVIDIA` driver package folder | `sources\$OEM$\$1\Drivers\NVIDIA` | Only the *NVIDIA driver* option. Windows Setup copies it to `C:\Drivers\NVIDIA` |
+
+### Method 1: oscdimg (recommended, produces a BIOS + UEFI bootable ISO)
+
+`oscdimg` is Microsoft's own tool for building Windows installation ISOs. It is part of the **Windows ADK**.
+
+**1. Install the tool (once).** Install the [Windows ADK](https://learn.microsoft.com/windows-hardware/get-started/adk-install) and select only **Deployment Tools**. Then open **Deployment and Imaging Tools Environment** from the Start menu **as administrator**. `oscdimg` is already on the path there.
+
+**2. Copy the ISO contents to a folder.** Right-click the original Windows ISO and choose **Mount**, then copy everything to a working folder (replace `X:` with the drive letter Windows gave the mounted ISO):
+
+```
+robocopy X: C:\ISO /E
+```
+
+You can also extract the ISO with 7-Zip into `C:\ISO`. Use a normal folder with at least 10 GB free.
+
+**3. Add your files.**
+
+- Copy `autounattend.xml` to `C:\ISO\` (the same folder as `setup.exe`).
+- Optional, for the NVIDIA driver option: copy the unpacked driver to `C:\ISO\sources\$OEM$\$1\Drivers\NVIDIA\`. If the `$OEM$` folders don't exist, create them. Keep the names exactly as written, including the `$`.
+
+Check that `C:\ISO` still contains `boot`, `efi`, `sources`, `bootmgr`, `setup.exe` and now `autounattend.xml`.
+
+**4. Build the bootable ISO.** For a normal x64 ISO that boots on both BIOS (legacy) and UEFI PCs:
+
+```
+oscdimg -m -o -u2 -udfver102 -lWIN_UNATTEND -bootdata:2#p0,e,b"C:\ISO\boot\etfsboot.com"#pEF,e,b"C:\ISO\efi\microsoft\boot\efisys_noprompt.bin" C:\ISO C:\Win_unattended.iso
+```
+
+| Part | Meaning |
+| --- | --- |
+| `-m -o -u2 -udfver102` | Ignore the size limit, optimize duplicate files, use the UDF file system (needed for files above 4 GB, such as `install.wim`) |
+| `-lWIN_UNATTEND` | Volume label of the ISO (any short name without spaces) |
+| `-bootdata:2#p0,e,b"...etfsboot.com"` | First boot entry: BIOS / legacy boot |
+| `#pEF,e,b"...efisys_noprompt.bin"` | Second boot entry: UEFI boot. The `noprompt` file skips the *"Press any key to boot from CD or DVD"* question, which is what you want for an unattended install |
+| `C:\ISO` | The folder to turn into an ISO |
+| `C:\Win_unattended.iso` | The new ISO to create (save it outside `C:\ISO`) |
+
+If `efisys_noprompt.bin` is not in `C:\ISO\efi\microsoft\boot\`, use `efisys.bin` instead; the only difference is that you will have to press a key at boot.
+
+**ARM64 images** boot only with UEFI, so use a single boot entry:
+
+```
+oscdimg -m -o -u2 -udfver102 -lWIN_UNATTEND -bootdata:1#pEF,e,b"C:\ISO\efi\microsoft\boot\efisys_noprompt.bin" C:\ISO C:\Win_unattended.iso
+```
+
+When it finishes, `oscdimg` prints the size of the ISO and `Done`. If it stops with an error instead, no usable ISO was made: check the paths in the command and that the folder contains `boot\etfsboot.com` and `efi\microsoft\boot\efisys*.bin`.
+
+### Method 2: a USB drive instead of a new ISO
+
+If you only need a bootable drive, you don't have to rebuild the ISO:
+
+1. Write the original ISO to the USB drive with [Rufus](https://rufus.ie/) (or the Windows Media Creation Tool).
+2. Copy `autounattend.xml` to the root of the drive.
+3. Leave Rufus' own **Customize Windows installation** options unticked, because Rufus writes its own `autounattend.xml` in that case and it could replace yours.
+
+With [Ventoy](https://www.ventoy.net/) you can copy the ISO you built with oscdimg onto the Ventoy drive and boot it from the menu.
+
+### Save and test the ISO
+
+1. Keep the final ISO under a clear name, for example `Win11_24H2_unattended.iso`. Don't edit the original ISO: keep it as the clean copy.
+2. **Test it in a virtual machine first** (Hyper-V, VirtualBox or VMware). Boot the VM from the ISO and check that Setup runs without asking the questions you automated. Use a UEFI VM and a BIOS VM if you plan to use both.
+3. Check the file in the ISO: mount it and confirm that `autounattend.xml` is in the root.
+4. To put it on a USB drive, write the ISO with Rufus (choose **GPT** for UEFI PCs or **MBR** for BIOS PCs) or copy it to a Ventoy drive.
+
+> **Warning:** if you use the automatic disk partitioning option, an unattended install **erases disk 0 without asking** as soon as the PC boots from this media. Label the ISO and the USB drive clearly, and don't leave them connected when you restart a PC you want to keep.
+
+### Common problems
+
+| Problem | Likely cause and fix |
+| --- | --- |
+| Setup ignores the answer file | The file is not in the root of the media, or is named `autounattend.xml.txt` (turn on *File name extensions* in File Explorer), or the XML is not valid. Generate it again and check the warnings in **Generate XML** |
+| The ISO doesn't boot | It was built without the `-bootdata` part, or one of the boot files was missing. Rebuild it with the command above |
+| Boots on UEFI but not on BIOS (or the reverse) | A boot entry is missing. Use the two-entry command for x64 |
+| Boots but asks to press a key | You used `efisys.bin`; use `efisys_noprompt.bin` |
+| `oscdimg` is not recognized | Open **Deployment and Imaging Tools Environment** as administrator, or call it with its full path: `C:\Program Files (x86)\Windows Kits\10\Assessment and Deployment Kit\Deployment Tools\amd64\Oscdimg\oscdimg.exe` |
+| The language or edition is rejected | The language, edition and architecture in the XML must exist in the ISO you used |
+| NVIDIA package not found after install | Check the folder is `sources\$OEM$\$1\Drivers\NVIDIA` at the ISO level and that you copied the unpacked files, not a `.zip` |
+
+> 7-Zip and most archive tools can add files to an ISO, but they **cannot make it bootable again**. Use `oscdimg` (or another tool made for building boot ISOs) for the final ISO.
 
 ## How it works
 
@@ -77,7 +169,7 @@ Repository **Settings → Pages → Build and deployment → Deploy from a branc
 | --- | --- |
 | `index.html` | The generator (single self-contained page, also the GitHub Pages site) |
 | `.nojekyll` | Makes GitHub Pages serve the files without Jekyll |
-| `README.md` | This documentation |
+| `README.md` | This documentation (including how to add the answer file to an ISO) |
 | `LICENSE` | MIT license |
 
 ## Adding a language
