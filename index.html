@@ -89,6 +89,12 @@ summary{cursor:pointer;font-weight:600}
 .card ol li,.card ul.plain li{margin:5px 0}
 .card .warnbox{border-left:4px solid var(--warn);background:var(--code);color:var(--codetx);border-radius:6px;padding:8px 12px;margin:10px 0;font-size:.9rem}
 .card pre.cmd{max-height:none;white-space:pre-wrap;word-break:break-all}
+.srch{display:flex;gap:8px;margin:0 0 6px}
+.srch input{max-width:360px;width:100%;font:inherit;color:var(--tx);background:var(--card);border:1px solid var(--bd);border-radius:999px;padding:7px 14px}
+.srch input:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--ac);outline-offset:1px}
+button.link{border:0;background:none;padding:0;color:var(--ac);font:inherit;font-weight:700;text-align:left}
+button.link:hover{text-decoration:underline;background:none}
+.sum p{margin:4px 0}
 footer{border-top:1px solid var(--bd);color:var(--mut);font-size:.85rem;padding:16px 0 28px}
 footer p{margin:4px 0}
 </style>
@@ -110,8 +116,8 @@ footer p{margin:4px 0}
     <button id="b-th" title="Toggle theme">Theme</button>
   </div>
 </div></header>
-<nav><div class="wrap"><div id="tabs" role="tablist"></div></div></nav>
-<main class="wrap"><div id="impbox"></div><div id="panel"></div></main>
+<nav><div class="wrap"><div class="srch"><input type="search" id="q" placeholder="Search options…  ( / )" aria-label="Search options" autocomplete="off" spellcheck="false"></div><div id="tabs" role="tablist" aria-label="Sections"></div></div></nav>
+<main class="wrap"><div id="impbox"></div><div id="panel" role="tabpanel" tabindex="-1"></div></main>
 <footer><div class="wrap">
   <p id="f1">Independent project, not affiliated with or endorsed by Winhance (memstechtips). It does not produce Winhance's official file: it generates a standard <code>autounattend.xml</code> with embedded scripts that apply equivalent tweaks. Always review the XML before using it.</p>
   <p id="f2">An answer file can erase disks and create accounts. Test in a virtual machine first. Use at your own risk.</p>
@@ -121,15 +127,61 @@ footer p{margin:4px 0}
 <script>
 'use strict';
 /* ---------- data helpers ---------- */
-const GEOS=[['','Do not change'],['193','Portugal'],['32','Brazil'],['217','Spain'],['84','France'],['94','Germany'],['242','United Kingdom'],['244','United States']];
-const LANGS=[['pt-PT','Português (Portugal)'],['pt-BR','Português (Brasil)'],['en-US','English (US)'],['en-GB','English (UK)'],['es-ES','Español (España)'],['fr-FR','Français (France)'],['de-DE','Deutsch (Deutschland)']];
-const KBDS=[['0816:00000816','Portuguese (Portugal)'],['0416:00000416','Portuguese (Brazil ABNT2)'],['0409:00000409','English (US)'],['0809:00000809','English (UK)'],['0c0a:0000040a','Spanish (Spain)'],['040c:0000040c','French'],['0407:00000407','German']];
-const TZS=[['','Ask / default'],['GMT Standard Time','Lisbon / London (GMT)'],['W. Europe Standard Time','Western Europe (Berlin, Paris…)'],['Central Europe Standard Time','Central Europe'],['Azores Standard Time','Azores'],['E. South America Standard Time','Brasília'],['Eastern Standard Time','US Eastern'],['Pacific Standard Time','US Pacific'],['UTC','UTC']];
+/* home locations: [GeoID, English name, ISO 3166 code]. Names are shown in the interface language through Intl.DisplayNames */
+const GEOS=[['','Do not change'],['9','Angola','AO'],['11','Argentina','AR'],['12','Australia','AU'],['14','Austria','AT'],['21','Belgium','BE'],['26','Bolivia','BO'],['32','Brazil','BR'],['35','Bulgaria','BG'],['57','Cabo Verde','CV'],['39','Canada','CA'],['46','Chile','CL'],['45','China','CN'],['51','Colombia','CO'],['54','Costa Rica','CR'],['108','Croatia','HR'],['59','Cyprus','CY'],['75','Czechia','CZ'],['61','Denmark','DK'],['66','Ecuador','EC'],['67','Egypt','EG'],['70','Estonia','EE'],['77','Finland','FI'],['84','France','FR'],['94','Germany','DE'],['98','Greece','GR'],['196','Guinea-Bissau','GW'],['104','Hong Kong SAR','HK'],['109','Hungary','HU'],['110','Iceland','IS'],['113','India','IN'],['111','Indonesia','ID'],['68','Ireland','IE'],['117','Israel','IL'],['118','Italy','IT'],['122','Japan','JP'],['129','Kenya','KE'],['134','Korea','KR'],['140','Latvia','LV'],['141','Lithuania','LT'],['147','Luxembourg','LU'],['167','Malaysia','MY'],['163','Malta','MT'],['166','Mexico','MX'],['159','Morocco','MA'],['168','Mozambique','MZ'],['176','Netherlands','NL'],['183','New Zealand','NZ'],['175','Nigeria','NG'],['177','Norway','NO'],['190','Pakistan','PK'],['192','Panama','PA'],['185','Paraguay','PY'],['187','Peru','PE'],['201','Philippines','PH'],['191','Poland','PL'],['193','Portugal','PT'],['202','Puerto Rico','PR'],['200','Romania','RO'],['203','Russia','RU'],['233','São Tomé and Príncipe','ST'],['205','Saudi Arabia','SA'],['271','Serbia','RS'],['215','Singapore','SG'],['143','Slovakia','SK'],['212','Slovenia','SI'],['209','South Africa','ZA'],['217','Spain','ES'],['221','Sweden','SE'],['223','Switzerland','CH'],['237','Taiwan','TW'],['227','Thailand','TH'],['7299303','Timor-Leste','TL'],['235','Türkiye','TR'],['241','Ukraine','UA'],['224','United Arab Emirates','AE'],['242','United Kingdom','GB'],['244','United States','US'],['246','Uruguay','UY'],['249','Venezuela','VE'],['251','Vietnam','VN']];
+/* Windows display languages (the ISO must contain the one you pick) */
+const LANGS=[['ar-SA','العربية (السعودية)'],['bg-BG','Български'],['cs-CZ','Čeština'],['da-DK','Dansk'],['de-DE','Deutsch (Deutschland)'],['el-GR','Ελληνικά'],['en-GB','English (UK)'],['en-US','English (US)'],['es-ES','Español (España)'],['es-MX','Español (México)'],['et-EE','Eesti'],['fi-FI','Suomi'],['fr-CA','Français (Canada)'],['fr-FR','Français (France)'],['he-IL','עברית'],['hr-HR','Hrvatski'],['hu-HU','Magyar'],['it-IT','Italiano'],['ja-JP','日本語'],['ko-KR','한국어'],['lt-LT','Lietuvių'],['lv-LV','Latviešu'],['nb-NO','Norsk bokmål'],['nl-NL','Nederlands'],['pl-PL','Polski'],['pt-BR','Português (Brasil)'],['pt-PT','Português (Portugal)'],['ro-RO','Română'],['ru-RU','Русский'],['sk-SK','Slovenčina'],['sl-SI','Slovenščina'],['sr-Latn-RS','Srpski (latinica)'],['sv-SE','Svenska'],['th-TH','ไทย'],['tr-TR','Türkçe'],['uk-UA','Українська'],['zh-CN','中文 (简体)'],['zh-TW','中文 (繁體)']];
+/* regional formats: every display language plus common regional variants */
+const LOCALES=[...LANGS,['de-AT','Deutsch (Österreich)'],['de-CH','Deutsch (Schweiz)'],['en-AU','English (Australia)'],['en-CA','English (Canada)'],['en-IE','English (Ireland)'],['en-IN','English (India)'],['en-NZ','English (New Zealand)'],['en-ZA','English (South Africa)'],['es-AR','Español (Argentina)'],['es-CL','Español (Chile)'],['es-CO','Español (Colombia)'],['es-US','Español (Estados Unidos)'],['fr-BE','Français (Belgique)'],['fr-CH','Français (Suisse)'],['it-CH','Italiano (Svizzera)'],['nl-BE','Nederlands (België)'],['pt-AO','Português (Angola)'],['pt-CV','Português (Cabo Verde)'],['pt-MZ','Português (Moçambique)']].sort((a,b)=>a[0].localeCompare(b[0]));
+/* keyboard layouts: InputLocale values (language id:keyboard id, or language id:{IME CLSID}{profile}) */
+const IME_JA='0411:{03B5835F-F03C-411B-9CE2-AA23E1171E36}{A76C93D9-5523-4E90-AAFA-4DB112F9AC76}',IME_KO='0412:{A028AE76-01B1-46C2-99C4-ACD9858AE02F}{B5FE1F02-D5F2-4445-9C03-C568F23C99A1}',
+ IME_ZHCN='0804:{81D4E9C9-1D3B-41BC-9E6C-4B40BF79E35E}{FA550B04-5AD7-411F-A5AC-CA038EC515D7}',IME_ZHTW='0404:{B115690A-EA02-48D5-A231-E3578D2FDF80}{B2F9C502-1742-11D4-9790-0080C882687E}';
+const KBDS=[['0401:00000401','Arabic (101)'],['0813:00000813','Belgian (Period)'],['080c:0000080c','Belgian French'],['0402:00030402','Bulgarian'],['0c0c:00001009','Canadian French'],['0804','Chinese Simplified (Microsoft Pinyin)',IME_ZHCN],['0404','Chinese Traditional (Microsoft Bopomofo)',IME_ZHTW],['041a:0000041a','Croatian'],['0405:00000405','Czech'],['0406:00000406','Danish'],['0413:00020409','Dutch (US International)'],['0809:00000809','English (UK)'],['0809:00000452','English (UK Extended)'],['0409:00000409','English (US)'],['0409:00020409','English (US International)'],['0425:00000425','Estonian'],['040b:0000040b','Finnish'],['040c:0000040c','French'],['0407:00000407','German'],['0408:00000408','Greek'],['040d:0002040d','Hebrew (Standard)'],['040e:0000040e','Hungarian'],['1809:00001809','Irish'],['0410:00000410','Italian'],['0411','Japanese (Microsoft IME)',IME_JA],['0412','Korean (Microsoft IME)',IME_KO],['080a:0000080a','Latin American'],['0426:00020426','Latvian (Standard)'],['0427:00010427','Lithuanian'],['0414:00000414','Norwegian'],['0415:00000415','Polish (Programmers)'],['0416:00000416','Portuguese (Brazil ABNT)'],['0416:00010416','Portuguese (Brazil ABNT2)'],['0816:00000816','Portuguese (Portugal)'],['0418:00010418','Romanian (Standard)'],['0419:00000419','Russian'],['241a:0000081a','Serbian (Latin)'],['041b:0000041b','Slovak'],['0424:00000424','Slovenian'],['0c0a:0000040a','Spanish (Spain)'],['041d:0000041d','Swedish'],['100c:0000100c','Swiss French'],['0807:00000807','Swiss German'],['041e:0000041e','Thai Kedmanee'],['041f:0000041f','Turkish Q'],['0422:00020422','Ukrainian (Enhanced)']]
+ .map(([v,l,ime])=>[ime||v,l]);
+const KBD_CUSTOM=['custom','Other (enter the code)…'];
+/* default keyboard and time zone for each language, used by "Detect from this browser" */
+const LANG_KBD={'ar-SA':'0401:00000401','bg-BG':'0402:00030402','cs-CZ':'0405:00000405','da-DK':'0406:00000406','de-AT':'0407:00000407','de-CH':'0807:00000807','de-DE':'0407:00000407','el-GR':'0408:00000408','en-GB':'0809:00000809','en-IE':'1809:00001809','en-US':'0409:00000409','es-ES':'0c0a:0000040a','es-MX':'080a:0000080a','es-AR':'080a:0000080a','es-CL':'080a:0000080a','es-CO':'080a:0000080a','es-US':'080a:0000080a','et-EE':'0425:00000425','fi-FI':'040b:0000040b','fr-BE':'080c:0000080c','fr-CA':'0c0c:00001009','fr-CH':'100c:0000100c','fr-FR':'040c:0000040c','he-IL':'040d:0002040d','hr-HR':'041a:0000041a','hu-HU':'040e:0000040e','it-IT':'0410:00000410','ja-JP':IME_JA,'ko-KR':IME_KO,'lt-LT':'0427:00010427','lv-LV':'0426:00020426','nb-NO':'0414:00000414','nl-BE':'0813:00000813','nl-NL':'0413:00020409','pl-PL':'0415:00000415','pt-AO':'0816:00000816','pt-BR':'0416:00010416','pt-CV':'0816:00000816','pt-MZ':'0816:00000816','pt-PT':'0816:00000816','ro-RO':'0418:00010418','ru-RU':'0419:00000419','sk-SK':'041b:0000041b','sl-SI':'0424:00000424','sr-Latn-RS':'241a:0000081a','sv-SE':'041d:0000041d','th-TH':'041e:0000041e','tr-TR':'041f:0000041f','uk-UA':'0422:00020422','zh-CN':IME_ZHCN,'zh-TW':IME_ZHTW};
+/* Windows time zone ids */
+const TZS=[['','Ask / default'],['Dateline Standard Time','(UTC-12:00) International Date Line West'],['UTC-11','(UTC-11:00) Coordinated Universal Time-11'],['Aleutian Standard Time','(UTC-10:00) Aleutian Islands'],['Hawaiian Standard Time','(UTC-10:00) Hawaii'],['Marquesas Standard Time','(UTC-09:30) Marquesas Islands'],['Alaskan Standard Time','(UTC-09:00) Alaska'],['UTC-09','(UTC-09:00) Coordinated Universal Time-09'],['Pacific Standard Time (Mexico)','(UTC-08:00) Baja California'],['UTC-08','(UTC-08:00) Coordinated Universal Time-08'],['Pacific Standard Time','(UTC-08:00) Pacific Time (US & Canada)'],['US Mountain Standard Time','(UTC-07:00) Arizona'],['Mountain Standard Time (Mexico)','(UTC-07:00) La Paz, Mazatlan'],['Mountain Standard Time','(UTC-07:00) Mountain Time (US & Canada)'],['Yukon Standard Time','(UTC-07:00) Yukon'],['Central America Standard Time','(UTC-06:00) Central America'],['Central Standard Time','(UTC-06:00) Central Time (US & Canada)'],['Easter Island Standard Time','(UTC-06:00) Easter Island'],['Central Standard Time (Mexico)','(UTC-06:00) Guadalajara, Mexico City, Monterrey'],['Canada Central Standard Time','(UTC-06:00) Saskatchewan'],['SA Pacific Standard Time','(UTC-05:00) Bogota, Lima, Quito, Rio Branco'],['Eastern Standard Time (Mexico)','(UTC-05:00) Chetumal'],['Eastern Standard Time','(UTC-05:00) Eastern Time (US & Canada)'],['Haiti Standard Time','(UTC-05:00) Haiti'],['Cuba Standard Time','(UTC-05:00) Havana'],['US Eastern Standard Time','(UTC-05:00) Indiana (East)'],['Turks And Caicos Standard Time','(UTC-05:00) Turks and Caicos'],['Paraguay Standard Time','(UTC-04:00) Asuncion'],['Atlantic Standard Time','(UTC-04:00) Atlantic Time (Canada)'],['Venezuela Standard Time','(UTC-04:00) Caracas'],['Central Brazilian Standard Time','(UTC-04:00) Cuiaba'],['SA Western Standard Time','(UTC-04:00) Georgetown, La Paz, Manaus, San Juan'],['Pacific SA Standard Time','(UTC-04:00) Santiago'],['Newfoundland Standard Time','(UTC-03:30) Newfoundland'],['Tocantins Standard Time','(UTC-03:00) Araguaina'],['E. South America Standard Time','(UTC-03:00) Brasilia'],['SA Eastern Standard Time','(UTC-03:00) Cayenne, Fortaleza'],['Argentina Standard Time','(UTC-03:00) City of Buenos Aires'],['Montevideo Standard Time','(UTC-03:00) Montevideo'],['Magallanes Standard Time','(UTC-03:00) Punta Arenas'],['Saint Pierre Standard Time','(UTC-03:00) Saint Pierre and Miquelon'],['Bahia Standard Time','(UTC-03:00) Salvador'],['Greenland Standard Time','(UTC-02:00) Greenland'],['UTC-02','(UTC-02:00) Coordinated Universal Time-02'],['Azores Standard Time','(UTC-01:00) Azores'],['Cape Verde Standard Time','(UTC-01:00) Cabo Verde Is.'],['UTC','(UTC) Coordinated Universal Time'],['GMT Standard Time','(UTC+00:00) Dublin, Edinburgh, Lisbon, London'],['Greenwich Standard Time','(UTC+00:00) Monrovia, Reykjavik'],['Sao Tome Standard Time','(UTC+00:00) Sao Tome'],['Morocco Standard Time','(UTC+01:00) Casablanca'],['W. Europe Standard Time','(UTC+01:00) Amsterdam, Berlin, Bern, Rome, Stockholm, Vienna'],['Central Europe Standard Time','(UTC+01:00) Belgrade, Bratislava, Budapest, Ljubljana, Prague'],['Romance Standard Time','(UTC+01:00) Brussels, Copenhagen, Madrid, Paris'],['Central European Standard Time','(UTC+01:00) Sarajevo, Skopje, Warsaw, Zagreb'],['W. Central Africa Standard Time','(UTC+01:00) West Central Africa'],['GTB Standard Time','(UTC+02:00) Athens, Bucharest'],['Middle East Standard Time','(UTC+02:00) Beirut'],['Egypt Standard Time','(UTC+02:00) Cairo'],['E. Europe Standard Time','(UTC+02:00) Chisinau'],['West Bank Standard Time','(UTC+02:00) Gaza, Hebron'],['South Africa Standard Time','(UTC+02:00) Harare, Pretoria'],['FLE Standard Time','(UTC+02:00) Helsinki, Kyiv, Riga, Sofia, Tallinn, Vilnius'],['Israel Standard Time','(UTC+02:00) Jerusalem'],['South Sudan Standard Time','(UTC+02:00) Juba'],['Kaliningrad Standard Time','(UTC+02:00) Kaliningrad'],['Sudan Standard Time','(UTC+02:00) Khartoum'],['Libya Standard Time','(UTC+02:00) Tripoli'],['Namibia Standard Time','(UTC+02:00) Windhoek'],['Jordan Standard Time','(UTC+03:00) Amman'],['Arabic Standard Time','(UTC+03:00) Baghdad'],['Syria Standard Time','(UTC+03:00) Damascus'],['Turkey Standard Time','(UTC+03:00) Istanbul'],['Arab Standard Time','(UTC+03:00) Kuwait, Riyadh'],['Belarus Standard Time','(UTC+03:00) Minsk'],['Russian Standard Time','(UTC+03:00) Moscow, St. Petersburg'],['E. Africa Standard Time','(UTC+03:00) Nairobi'],['Volgograd Standard Time','(UTC+03:00) Volgograd'],['Iran Standard Time','(UTC+03:30) Tehran'],['Arabian Standard Time','(UTC+04:00) Abu Dhabi, Muscat'],['Astrakhan Standard Time','(UTC+04:00) Astrakhan, Ulyanovsk'],['Azerbaijan Standard Time','(UTC+04:00) Baku'],['Russia Time Zone 3','(UTC+04:00) Izhevsk, Samara'],['Mauritius Standard Time','(UTC+04:00) Port Louis'],['Saratov Standard Time','(UTC+04:00) Saratov'],['Georgian Standard Time','(UTC+04:00) Tbilisi'],['Caucasus Standard Time','(UTC+04:00) Yerevan'],['Afghanistan Standard Time','(UTC+04:30) Kabul'],['West Asia Standard Time','(UTC+05:00) Ashgabat, Tashkent'],['Ekaterinburg Standard Time','(UTC+05:00) Ekaterinburg'],['Pakistan Standard Time','(UTC+05:00) Islamabad, Karachi'],['Qyzylorda Standard Time','(UTC+05:00) Qyzylorda'],['India Standard Time','(UTC+05:30) Chennai, Kolkata, Mumbai, New Delhi'],['Sri Lanka Standard Time','(UTC+05:30) Sri Jayawardenepura'],['Nepal Standard Time','(UTC+05:45) Kathmandu'],['Central Asia Standard Time','(UTC+06:00) Bishkek'],['Bangladesh Standard Time','(UTC+06:00) Dhaka'],['Omsk Standard Time','(UTC+06:00) Omsk'],['Myanmar Standard Time','(UTC+06:30) Yangon (Rangoon)'],['SE Asia Standard Time','(UTC+07:00) Bangkok, Hanoi, Jakarta'],['Altai Standard Time','(UTC+07:00) Barnaul, Gorno-Altaysk'],['W. Mongolia Standard Time','(UTC+07:00) Hovd'],['North Asia Standard Time','(UTC+07:00) Krasnoyarsk'],['N. Central Asia Standard Time','(UTC+07:00) Novosibirsk'],['Tomsk Standard Time','(UTC+07:00) Tomsk'],['China Standard Time','(UTC+08:00) Beijing, Chongqing, Hong Kong, Urumqi'],['North Asia East Standard Time','(UTC+08:00) Irkutsk'],['Singapore Standard Time','(UTC+08:00) Kuala Lumpur, Singapore'],['W. Australia Standard Time','(UTC+08:00) Perth'],['Taipei Standard Time','(UTC+08:00) Taipei'],['Ulaanbaatar Standard Time','(UTC+08:00) Ulaanbaatar'],['Aus Central W. Standard Time','(UTC+08:45) Eucla'],['Transbaikal Standard Time','(UTC+09:00) Chita'],['Tokyo Standard Time','(UTC+09:00) Osaka, Sapporo, Tokyo'],['North Korea Standard Time','(UTC+09:00) Pyongyang'],['Korea Standard Time','(UTC+09:00) Seoul'],['Yakutsk Standard Time','(UTC+09:00) Yakutsk'],['Cen. Australia Standard Time','(UTC+09:30) Adelaide'],['AUS Central Standard Time','(UTC+09:30) Darwin'],['E. Australia Standard Time','(UTC+10:00) Brisbane'],['AUS Eastern Standard Time','(UTC+10:00) Canberra, Melbourne, Sydney'],['West Pacific Standard Time','(UTC+10:00) Guam, Port Moresby'],['Tasmania Standard Time','(UTC+10:00) Hobart'],['Vladivostok Standard Time','(UTC+10:00) Vladivostok'],['Lord Howe Standard Time','(UTC+10:30) Lord Howe Island'],['Bougainville Standard Time','(UTC+11:00) Bougainville Island'],['Russia Time Zone 10','(UTC+11:00) Chokurdakh'],['Magadan Standard Time','(UTC+11:00) Magadan'],['Norfolk Standard Time','(UTC+11:00) Norfolk Island'],['Sakhalin Standard Time','(UTC+11:00) Sakhalin'],['Central Pacific Standard Time','(UTC+11:00) Solomon Is., New Caledonia'],['Russia Time Zone 11','(UTC+12:00) Anadyr, Petropavlovsk-Kamchatsky'],['New Zealand Standard Time','(UTC+12:00) Auckland, Wellington'],['UTC+12','(UTC+12:00) Coordinated Universal Time+12'],['Fiji Standard Time','(UTC+12:00) Fiji'],['Chatham Islands Standard Time','(UTC+12:45) Chatham Islands'],['UTC+13','(UTC+13:00) Coordinated Universal Time+13'],['Tonga Standard Time','(UTC+13:00) Nuku\'alofa'],['Samoa Standard Time','(UTC+13:00) Samoa'],['Line Islands Standard Time','(UTC+14:00) Kiritimati Island']];
+/* IANA (browser) time zone -> Windows id, for "Detect from this browser" */
+const IANA_TZ={'Europe/Lisbon':'GMT Standard Time','Atlantic/Madeira':'GMT Standard Time','Atlantic/Azores':'Azores Standard Time','Europe/London':'GMT Standard Time','Europe/Dublin':'GMT Standard Time','Atlantic/Canary':'GMT Standard Time','Atlantic/Reykjavik':'Greenwich Standard Time','Atlantic/Cape_Verde':'Cape Verde Standard Time','Africa/Sao_Tome':'Sao Tome Standard Time','Africa/Casablanca':'Morocco Standard Time',
+ 'Europe/Berlin':'W. Europe Standard Time','Europe/Amsterdam':'W. Europe Standard Time','Europe/Rome':'W. Europe Standard Time','Europe/Vienna':'W. Europe Standard Time','Europe/Zurich':'W. Europe Standard Time','Europe/Stockholm':'W. Europe Standard Time','Europe/Oslo':'W. Europe Standard Time','Europe/Luxembourg':'W. Europe Standard Time','Europe/Malta':'W. Europe Standard Time',
+ 'Europe/Madrid':'Romance Standard Time','Europe/Paris':'Romance Standard Time','Europe/Brussels':'Romance Standard Time','Europe/Copenhagen':'Romance Standard Time','Europe/Prague':'Central Europe Standard Time','Europe/Budapest':'Central Europe Standard Time','Europe/Bratislava':'Central Europe Standard Time','Europe/Ljubljana':'Central Europe Standard Time','Europe/Belgrade':'Central Europe Standard Time',
+ 'Europe/Warsaw':'Central European Standard Time','Europe/Zagreb':'Central European Standard Time','Europe/Sarajevo':'Central European Standard Time','Europe/Skopje':'Central European Standard Time','Africa/Lagos':'W. Central Africa Standard Time','Africa/Luanda':'W. Central Africa Standard Time','Africa/Algiers':'W. Central Africa Standard Time',
+ 'Europe/Athens':'GTB Standard Time','Europe/Bucharest':'GTB Standard Time','Europe/Helsinki':'FLE Standard Time','Europe/Kyiv':'FLE Standard Time','Europe/Kiev':'FLE Standard Time','Europe/Riga':'FLE Standard Time','Europe/Sofia':'FLE Standard Time','Europe/Tallinn':'FLE Standard Time','Europe/Vilnius':'FLE Standard Time','Europe/Chisinau':'E. Europe Standard Time',
+ 'Africa/Cairo':'Egypt Standard Time','Africa/Johannesburg':'South Africa Standard Time','Africa/Maputo':'South Africa Standard Time','Africa/Harare':'South Africa Standard Time','Asia/Jerusalem':'Israel Standard Time','Asia/Beirut':'Middle East Standard Time','Africa/Windhoek':'Namibia Standard Time','Europe/Kaliningrad':'Kaliningrad Standard Time',
+ 'Europe/Istanbul':'Turkey Standard Time','Europe/Moscow':'Russian Standard Time','Europe/Minsk':'Belarus Standard Time','Asia/Riyadh':'Arab Standard Time','Asia/Baghdad':'Arabic Standard Time','Africa/Nairobi':'E. Africa Standard Time','Asia/Tehran':'Iran Standard Time','Asia/Dubai':'Arabian Standard Time','Asia/Baku':'Azerbaijan Standard Time','Asia/Tbilisi':'Georgian Standard Time','Asia/Yerevan':'Caucasus Standard Time','Asia/Kabul':'Afghanistan Standard Time',
+ 'Asia/Karachi':'Pakistan Standard Time','Asia/Tashkent':'West Asia Standard Time','Asia/Kolkata':'India Standard Time','Asia/Calcutta':'India Standard Time','Asia/Colombo':'Sri Lanka Standard Time','Asia/Kathmandu':'Nepal Standard Time','Asia/Dhaka':'Bangladesh Standard Time','Asia/Yangon':'Myanmar Standard Time','Asia/Bangkok':'SE Asia Standard Time','Asia/Jakarta':'SE Asia Standard Time','Asia/Ho_Chi_Minh':'SE Asia Standard Time',
+ 'Asia/Shanghai':'China Standard Time','Asia/Hong_Kong':'China Standard Time','Asia/Macau':'China Standard Time','Asia/Singapore':'Singapore Standard Time','Asia/Kuala_Lumpur':'Singapore Standard Time','Asia/Manila':'Singapore Standard Time','Asia/Taipei':'Taipei Standard Time','Australia/Perth':'W. Australia Standard Time','Asia/Tokyo':'Tokyo Standard Time','Asia/Seoul':'Korea Standard Time','Asia/Dili':'Tokyo Standard Time',
+ 'Australia/Adelaide':'Cen. Australia Standard Time','Australia/Darwin':'AUS Central Standard Time','Australia/Brisbane':'E. Australia Standard Time','Australia/Sydney':'AUS Eastern Standard Time','Australia/Melbourne':'AUS Eastern Standard Time','Australia/Hobart':'Tasmania Standard Time','Pacific/Auckland':'New Zealand Standard Time','Pacific/Fiji':'Fiji Standard Time',
+ 'America/Sao_Paulo':'E. South America Standard Time','America/Fortaleza':'SA Eastern Standard Time','America/Recife':'SA Eastern Standard Time','America/Bahia':'Bahia Standard Time','America/Manaus':'SA Western Standard Time','America/Cuiaba':'Central Brazilian Standard Time','America/Argentina/Buenos_Aires':'Argentina Standard Time','America/Buenos_Aires':'Argentina Standard Time','America/Montevideo':'Montevideo Standard Time','America/Asuncion':'Paraguay Standard Time','America/Santiago':'Pacific SA Standard Time','America/Caracas':'Venezuela Standard Time','America/La_Paz':'SA Western Standard Time','America/Bogota':'SA Pacific Standard Time','America/Lima':'SA Pacific Standard Time','America/Guayaquil':'SA Pacific Standard Time','America/Panama':'SA Pacific Standard Time','America/Puerto_Rico':'SA Western Standard Time','America/Costa_Rica':'Central America Standard Time',
+ 'America/Mexico_City':'Central Standard Time (Mexico)','America/New_York':'Eastern Standard Time','America/Toronto':'Eastern Standard Time','America/Detroit':'Eastern Standard Time','America/Chicago':'Central Standard Time','America/Winnipeg':'Central Standard Time','America/Regina':'Canada Central Standard Time','America/Denver':'Mountain Standard Time','America/Edmonton':'Mountain Standard Time','America/Phoenix':'US Mountain Standard Time','America/Los_Angeles':'Pacific Standard Time','America/Vancouver':'Pacific Standard Time','America/Tijuana':'Pacific Standard Time (Mexico)','America/Anchorage':'Alaskan Standard Time','Pacific/Honolulu':'Hawaiian Standard Time','America/Halifax':'Atlantic Standard Time','America/St_Johns':'Newfoundland Standard Time',
+ 'UTC':'UTC','Etc/UTC':'UTC','Etc/GMT':'UTC'};
+/* language, regional format, keyboard, home location and time zone of this browser */
+function browserLocale(){
+ const r={};let nl='',tz='';
+ try{nl=(navigator.languages&&navigator.languages[0])||navigator.language||''}catch(e){}
+ try{tz=Intl.DateTimeFormat().resolvedOptions().timeZone||''}catch(e){}
+ const low=nl.toLowerCase(),pri=low.split('-')[0];
+ const exact=l=>l.find(x=>x[0].toLowerCase()===low);
+ const lang=exact(LANGS)||LANGS.find(x=>x[0].toLowerCase().split('-')[0]===pri);
+ if(lang)r.lang=lang[0];
+ const loc=exact(LOCALES);
+ if(loc)r.userLoc=loc[0]===r.lang?'':loc[0];
+ r.kbd=LANG_KBD[loc?loc[0]:r.lang]||LANG_KBD[r.lang];
+ const cc=(nl.split('-')[1]||'').toUpperCase(),g=GEOS.find(x=>x[2]===cc);
+ if(g)r.homeLoc=g[0];
+ if(IANA_TZ[tz])r.tz=IANA_TZ[tz];
+ return r;
+}
 const D='REG_DWORD',Z='REG_SZ';
 const HK=(p,n,t,d)=>({k:'reg',h:'HKLM',p,n,t,d});
 const HU=(p,n,t,d)=>({k:'reg',h:'HKCU',p,n,t,d});
+/* PowerShell lines: PS = specialize pass (SYSTEM), PL = first sign-in as SYSTEM (firstboot.ps1),
+   PU = per-user line written once with {U} = the root of the user hive (default profile or HKCU) */
 const PS=l=>({k:'ps',w:'sys',l});
 const PL=l=>({k:'ps',w:'logon',l});
+const PU=l=>({k:'psu',l});
 const AP=n=>({k:'appx',n});
 const T=(id,label,desc,fx,def=false,x={})=>({id,type:'toggle',label,desc,fx,def,...x});
 const SEL=(id,label,desc,opts,def,fx,x={})=>({id,type:'select',label,desc,opts,def,fx,...x});
@@ -142,13 +194,16 @@ function randName(){const c='ABCDEFGHJKLMNPQRSTUVWXYZ23456789',b=new Uint8Array(
 /* ---------- Windows tab (installation) ---------- */
 const tWin={id:'windows',title:'Windows',groups:[
  {title:'Language and region',opts:[
-  SEL('lang','Windows language','Your ISO must include this language.',LANGS,'pt-PT',null,{raw:true}),
-  SEL('userLoc','Regional format','Dates, numbers and currency. Leave as is to follow the Windows language, or choose another one (e.g. English Windows with Portuguese dates).',[['','Same as Windows language'],...LANGS],''),
-  SEL('homeLoc','Country or region (home location)','Used by the Microsoft Store and regional content. Set at first sign-in. Useful when Windows is installed in English but you live elsewhere.',GEOS,''),
-  SEL('kbd','Keyboard',null,KBDS,'0816:00000816'),
-  SEL('tz','Time zone',null,TZS,'GMT Standard Time')]},
+  {id:'detect',type:'button',label:'Detect from this browser',desc:'Fills in the language, regional format, keyboard, country and time zone used by this browser.',def:null,run:()=>{const b=browserLocale();for(const k of ['lang','userLoc','kbd','homeLoc','tz'])if(b[k]!==undefined)S[k]=b[k]}},
+  SEL('lang','Windows language','Your ISO must include this language.',LANGS,'en-US',null,{raw:true}),
+  SEL('userLoc','Regional format','Dates, numbers, currency and the language for non-Unicode programs. Leave as is to follow the Windows language, or choose another one (e.g. English Windows with Portuguese dates).',[['','Same as Windows language'],...LOCALES],'',null,{raw:true}),
+  SEL('homeLoc','Country or region (home location)','Used by the Microsoft Store and regional content. Set at first sign-in. Useful when Windows is installed in English but you live elsewhere.',GEOS,'',null,{region:true}),
+  SEL('kbd','Keyboard',null,[...KBDS,KBD_CUSTOM],'0409:00000409',null,{sort:true}),
+  TXT('kbdCustom','Keyboard code','Format LLLL:KKKKKKKK (for example 0816:00000816) or a language name such as pt-PT. Several layouts can be separated with ";".','',{show:s=>s.kbd==='custom'}),
+  SEL('kbd2','Second keyboard (optional)','Added to the language bar, for example English (US) next to your own layout.',[['','None'],...KBDS],'',null,{sort:true}),
+  SEL('tz','Time zone',null,TZS,'',null,{raw:true})]},
  {title:'Edition and license',opts:[
-  SEL('edition','Windows edition','"Ask" shows the edition picker. Generic keys only select the edition; they do not activate Windows.',[['ask','Ask during installation'],['pro','Pro (generic key)'],['home','Home (generic key)'],['ent','Enterprise (generic key)'],['edu','Education (generic key)'],['custom','Own key…']],'ask'),
+  SEL('edition','Windows edition','"Ask" shows the edition picker. Generic keys only select the edition; they do not activate Windows.',[['ask','Ask during installation'],['pro','Pro (generic key)'],['home','Home (generic key)'],['homeSl','Home Single Language (generic key)'],['homeN','Home N (generic key)'],['proN','Pro N (generic key)'],['proEdu','Pro Education (generic key)'],['proWs','Pro for Workstations (generic key)'],['ent','Enterprise (generic key)'],['edu','Education (generic key)'],['custom','Own key…']],'ask'),
   TXT('customKey','Product key','Format XXXXX-XXXXX-XXXXX-XXXXX-XXXXX','',{show:s=>s.edition==='custom'}),
   SEL('arch','Architecture','The one of your ISO.',[['amd64','x64 (amd64)'],['arm64','ARM64'],['x86','x86 (32-bit)']],'amd64')]},
  {title:'Hardware checks (Windows 11)',gd:'Written to HKLM\\SYSTEM\\Setup\\LabConfig during setup.',opts:[
@@ -159,10 +214,13 @@ const tWin={id:'windows',title:'Windows',groups:[
   T('bpSto','Bypass storage space check',null,null,true),
   T('bpDsk','Bypass disk type check',null,null,true)]},
  {title:'Installation',opts:[
-  T('wipe','Automatically partition and wipe disk 0','Creates EFI + MSR + Windows (GPT) and ERASES the whole of disk 0 without asking. UEFI only.',null,false,{danger:true}),
-  T('offline','Disable the network during setup','Disables the adapters until the first sign-in. Avoids a forced Microsoft account and mid-setup Windows Update downloads.',null,true),
+  T('wipe','Automatically partition and wipe the disk','ERASES the whole disk chosen below without asking, then installs Windows on it.',null,false,{danger:true}),
+  TXT('diskId','Disk number','The number shown by diskpart (list disk) or by Disk Management. 0 is usually the first internal disk.','0',{show:s=>s.wipe}),
+  SEL('diskStyle','Partition layout',null,[['gpt','GPT for UEFI PCs: EFI + MSR + Windows'],['mbr','MBR for BIOS (legacy) PCs: System Reserved + Windows']],'gpt',null,{show:s=>s.wipe}),
+  T('offline','Disable the network during setup','Disables the adapters until the first sign-in. Avoids a forced Microsoft account and mid-setup Windows Update downloads. They are turned back on automatically, for any account type.',null,true),
   T('nro','Allow a local account without internet (BypassNRO)',null,null,true),
-  T('net35','Install .NET Framework 3.5','Looks for \\sources\\sxs on the drives; requires the original ISO.',null,false)]},
+  T('net35','Install .NET Framework 3.5','Looks for \\sources\\sxs on the drives; requires the original ISO.',null,false),
+  T('cleanup','Delete the setup scripts and the cached answer file after the next restart','Removes C:\\Windows\\Panther\\unattend*.xml and the scripts in C:\\ProgramData\\WinTweaks (the logs stay). Recommended when the XML contains passwords.',null,false)]},
  {title:'OOBE screens',opts:[
   T('hideEula','Hide license agreement (EULA)',null,null,true),
   T('hideOem','Hide OEM registration',null,null,true),
@@ -181,7 +239,7 @@ const tConta={id:'conta',title:'User account',groups:[
   TXT('accPass','Password','Stored in plain text in the XML. It can be left empty and set later.','',{show:isLocal,pw:true}),
   SEL('accGroup','Account type',null,[['Administrators','Administrator'],['Users','Standard user']],'Administrators',null,{show:isLocal}),
   T('autoLogon','Sign in automatically once','Useful to run the first-logon scripts without intervention.',null,false,{show:isLocal}),
-  T('pwNever','Password never expires','Applied at first sign-in (requires an administrator account).',null,false,{show:isLocal})]},
+  T('pwNever','Passwords of local accounts never expire','Sets the maximum password age to unlimited during setup, so it also covers accounts created in OOBE and standard users.',null,false)]},
  {title:'Computer',opts:[
   SEL('pcMode','Computer name','"Random" asks Windows to generate a unique name on every installation.',[['auto','Automatic (Windows default)'],['random','Random (generated by Windows)'],['custom','Custom']],'auto'),
   TXT('pcName','Custom name','Max. 15 characters: letters, digits and hyphens.','',{show:s=>s.pcMode==='custom'}),
@@ -198,14 +256,14 @@ const wifiShow=s=>s.wifiOn;
 const wifiKeyShow=s=>s.wifiOn&&s.wifiAuth!=='open';
 const ipShow=s=>s.ipMode==='static';
 const tRede={id:'rede',title:'Network',groups:[
- {title:'Wi-Fi',gd:'Saves a Wi-Fi profile and connects at first sign-in (adapters are re-enabled first when "Disable the network during setup" is on). The Software (winget) tab needs this or a cable.',opts:[
-  T('wifiOn','Connect to a Wi-Fi network automatically','Needs a Wi-Fi adapter and an administrator account.',null,false),
+ {title:'Wi-Fi',gd:'Saves a Wi-Fi profile and connects at the first sign-in (adapters are re-enabled first when "Disable the network during setup" is on). Network settings run as SYSTEM, so they work for standard accounts too. The Software (winget) tab needs this or a cable.',opts:[
+  T('wifiOn','Connect to a Wi-Fi network automatically','Needs a Wi-Fi adapter. Names with accents and symbols are supported.',null,false),
   TXT('wifiSsid','Network name (SSID)',null,'',{show:wifiShow}),
   SEL('wifiAuth','Security','Routers in WPA2/WPA3 mixed mode work with WPA2.',WIFI_AUTH,'wpa2',null,{show:wifiShow}),
   TXT('wifiPass','Wi-Fi password','Stored in plain text in the XML (8 to 63 characters).','',{show:wifiKeyShow,pw:true}),
   T('wifiAuto','Connect automatically when in range',null,null,true,{show:wifiShow}),
   T('wifiHidden','Hidden network (SSID not broadcast)',null,null,false,{show:wifiShow}),
-  T('wifiClean','Remove the password from the scripts after use','Overwrites it in firstlogon.ps1 and in C:\\Windows\\Panther once the profile is saved. The XML on your USB drive keeps it.',null,true,{show:wifiKeyShow})]},
+  T('wifiClean','Remove the password from the scripts after use','Overwrites it in firstboot.ps1 and in C:\\Windows\\Panther once the profile is saved. The XML on your USB drive keeps it.',null,true,{show:wifiKeyShow})]},
  {title:'Wired (Ethernet)',gd:'Applied at first sign-in to wired adapters.',opts:[
   SEL('ipMode','IPv4 address',null,[['dhcp','Automatic (DHCP)'],['static','Static address']],'dhcp'),
   TXT('ethName','Only adapters whose name contains','Empty = all wired adapters. Recommended with a static address, so that two adapters do not get the same IP.','',{show:ipShow}),
@@ -241,7 +299,7 @@ const tPriv={id:'privacidade',title:'Privacy and security',groups:[
    HK(P+'Windows Search','AllowCortana',D,0),HK(P+'Windows Search','DisableWebSearch',D,1),HK(P+'Windows Search','ConnectedSearchUseWeb',D,0),HU(CV+'Search','BingSearchEnabled',D,0)]),
   T('copilot','Disable Windows Copilot',null,()=>[
    HK(P+'WindowsCopilot','TurnOffWindowsCopilot',D,1),HU('Software\\Policies\\Microsoft\\Windows\\WindowsCopilot','TurnOffWindowsCopilot',D,1)]),
-  T('recall','Disable Recall (AI data analysis)',null,()=>[HK(P+'WindowsAI','DisableAIDataAnalysis',D,1)])]},
+  T('recall','Disable Recall (AI data analysis)',null,()=>[HK(P+'WindowsAI','DisableAIDataAnalysis',D,1),HK(P+'WindowsAI','AllowRecallEnablement',D,0)],false,{legacy:()=>[HK(P+'WindowsAI','DisableAIDataAnalysis',D,1)]})]},
  {title:'Activity and location',opts:[
   T('activity','Disable activity history',null,()=>[
    HK(P+'System','EnableActivityFeed',D,0),HK(P+'System','PublishUserActivities',D,0),HK(P+'System','UploadUserActivities',D,0)]),
@@ -250,7 +308,10 @@ const tPriv={id:'privacidade',title:'Privacy and security',groups:[
    HK(P+'CloudContent','DisableWindowsConsumerFeatures',D,1),HK(P+'CloudContent','DisableCloudOptimizedContent',D,1)])]},
  {title:'System',opts:[
   T('bitlk','Prevent automatic device encryption (BitLocker)',null,()=>[HK('SYSTEM\\CurrentControlSet\\Control\\BitLocker','PreventDeviceEncryption',D,1)]),
-  T('widgets','Disable Widgets / News and interests',null,()=>[HK('SOFTWARE\\Policies\\Microsoft\\Dsh','AllowNewsAndInterests',D,0)])]}
+  T('widgets','Disable Widgets / News and interests',null,()=>[HK('SOFTWARE\\Policies\\Microsoft\\Dsh','AllowNewsAndInterests',D,0)]),
+  SEL('uac','User Account Control (UAC)','UAC stays on in every mode. "Never notify" elevates administrators silently, which also lets malware do it.',[NOCH,['dim','Notify without dimming the desktop'],['never','Never notify (not recommended)']],'',v=>[
+   HK(CV+'Policies\\System','ConsentPromptBehaviorAdmin',D,v==='never'?0:5),HK(CV+'Policies\\System','PromptOnSecureDesktop',D,0)]),
+  T('smart','Turn off SmartScreen for apps and files','Windows stops checking downloaded programs against Microsoft\'s reputation service. Not recommended.',()=>[HK(P+'System','EnableSmartScreen',D,0)])]}
 ]};
 
 /* ---------- Performance and gaming ---------- */
@@ -264,11 +325,16 @@ const tPerf={id:'performance',title:'Performance and gaming',groups:[
    HK('SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Multimedia\\SystemProfile','NetworkThrottlingIndex',D,4294967295),
    HK('SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Multimedia\\SystemProfile','SystemResponsiveness',D,0)]),
   T('mouse','Disable mouse acceleration (pointer precision)',null,()=>[
-   HU('Control Panel\\Mouse','MouseSpeed',Z,'0'),HU('Control Panel\\Mouse','MouseThreshold1',Z,'0'),HU('Control Panel\\Mouse','MouseThreshold2',Z,'0')])]},
+   HU('Control Panel\\Mouse','MouseSpeed',Z,'0'),HU('Control Panel\\Mouse','MouseThreshold1',Z,'0'),HU('Control Panel\\Mouse','MouseThreshold2',Z,'0')]),
+  T('vbs','Turn off Memory Integrity and virtualization-based security','Can add a few FPS in games, but removes a protection against kernel malware. Not part of any preset.',()=>[
+   HK('SYSTEM\\CurrentControlSet\\Control\\DeviceGuard','EnableVirtualizationBasedSecurity',D,0),
+   HK('SYSTEM\\CurrentControlSet\\Control\\DeviceGuard\\Scenarios\\HypervisorEnforcedCodeIntegrity','Enabled',D,0)],false,{danger:true})]},
  {title:'General performance',opts:[
   T('prio','Prioritize foreground programs',null,()=>[HK('SYSTEM\\CurrentControlSet\\Control\\PriorityControl','Win32PrioritySeparation',D,38)]),
-  T('visfx','Visual effects for best performance',null,()=>[
-   HU(CV+'Explorer\\VisualEffects','VisualFXSetting',D,2),HU('Control Panel\\Desktop\\WindowMetrics','MinAnimate',Z,'0')]),
+  T('visfx','Visual effects for best performance','Turns off animations, shadows and fades. Font smoothing stays on.',()=>[
+   HU(CV+'Explorer\\VisualEffects','VisualFXSetting',D,2),HU('Control Panel\\Desktop\\WindowMetrics','MinAnimate',Z,'0'),
+   HU('Control Panel\\Desktop','UserPreferencesMask','REG_BINARY','9012038010000000'),HU(ADV,'ListviewAlphaSelect',D,0),HU(ADV,'ListviewShadow',D,0),HU(ADV,'TaskbarAnimations',D,0),HU('Software\\Microsoft\\Windows\\DWM','EnableAeroPeek',D,0)],
+   false,{legacy:()=>[HU(CV+'Explorer\\VisualEffects','VisualFXSetting',D,2),HU('Control Panel\\Desktop\\WindowMetrics','MinAnimate',Z,'0')]}),
   T('bgapps','Prevent apps from running in the background',null,()=>[HK(P+'AppPrivacy','LetAppsRunInBackground',D,2)]),
   T('sysmain','Disable SysMain (Superfetch)','May help on HDDs; the gain on SSDs is small.',()=>[HK('SYSTEM\\CurrentControlSet\\Services\\SysMain','Start',D,4)]),
   T('wsearch','Disable file indexing (Windows Search)','Searching in File Explorer becomes slower.',()=>[HK('SYSTEM\\CurrentControlSet\\Services\\WSearch','Start',D,4)]),
@@ -318,7 +384,13 @@ const tNot={id:'notificacoes',title:'Notifications and sound',groups:[
   T('toast','Disable all notifications (toasts)',null,()=>[HU(CV+'PushNotifications','ToastEnabled',D,0)])]},
  {title:'Sound',opts:[
   T('bootSnd','Disable startup sound',null,()=>[HK(CV+'Policies\\System','DisableStartupSound',D,1)]),
-  T('noSnd','Sound scheme: no sounds',null,()=>[HU('AppEvents\\Schemes',null,Z,'.None')])]}
+  T('noSnd','Sound scheme: no sounds','Selects the "No Sounds" scheme and clears the sound of every event.',()=>[HU('AppEvents\\Schemes',null,Z,'.None'),
+   PU("Get-ChildItem -LiteralPath '{U}\\AppEvents\\Schemes\\Apps' -Recurse | Where-Object { $_.PSChildName -eq '.Current' } | ForEach-Object { Set-ItemProperty -LiteralPath $_.PSPath -Name '(default)' -Value '' }")],
+   false,{legacy:()=>[HU('AppEvents\\Schemes',null,Z,'.None')]})]},
+ {title:'Keyboard',opts:[
+  T('numLock','Turn on Num Lock at startup','On the sign-in screen and for the new accounts.',()=>[HU('Control Panel\\Keyboard','InitialKeyboardIndicators',Z,'2'),
+   PS("reg add 'HKU\\.DEFAULT\\Control Panel\\Keyboard' /v InitialKeyboardIndicators /t REG_SZ /d 2 /f | Out-Null")]),
+  T('sticky','Disable the Sticky Keys shortcut (pressing Shift five times)','Stops the Sticky Keys prompt from appearing in games.',()=>[HU('Control Panel\\Accessibility\\StickyKeys','Flags',Z,'506')])]}
 ]};
 /* ---------- Personalization ---------- */
 const PERS=CV+'Themes\\Personalize';
@@ -343,7 +415,8 @@ const tBarra={id:'barra',title:'Taskbar',groups:[
   T('tbWid','Hide Widgets button',null,()=>[HU(ADV,'TaskbarDa',D,0)]),
   T('tbChat','Hide Chat/Teams button',null,()=>[HU(ADV,'TaskbarMn',D,0)]),
   T('tbCop','Hide Copilot button',null,()=>[HU(ADV,'ShowCopilotButton',D,0)]),
-  T('tbSec','Show seconds in the clock',null,()=>[HU(ADV,'ShowSecondsInSystemClock',D,1)])]}
+  T('tbSec','Show seconds in the clock',null,()=>[HU(ADV,'ShowSecondsInSystemClock',D,1)]),
+  T('tbEnd','Show "End task" when right-clicking an app','Windows 11 23H2 and later: closes a frozen program from the taskbar.',()=>[HU(ADV+'\\TaskbarDeveloperSettings','TaskbarEndTask',D,1)])]}
 ]};
 const tIni={id:'iniciar',title:'Start menu',groups:[
  {title:'Start menu',opts:[
@@ -351,7 +424,8 @@ const tIni={id:'iniciar',title:'Start menu',groups:[
   T('stRec','Hide the "Recommended" section','May only take effect on some editions (Education/Enterprise).',()=>[HK(P+'Explorer','HideRecommendedSection',D,1)]),
   T('stIris','Disable account suggestions and notifications in Start',null,()=>[HU(ADV,'Start_IrisRecommendations',D,0),HU(ADV,'Start_AccountNotifications',D,0)]),
   T('stDocs','Do not show recent files in Start',null,()=>[HU(ADV,'Start_TrackDocs',D,0)]),
-  T('stWeb','Disable web suggestions in the search box',null,()=>[HU('Software\\Policies\\Microsoft\\Windows\\Explorer','DisableSearchBoxSuggestions',D,1)])]}
+  T('stWeb','Disable web suggestions in the search box',null,()=>[HU('Software\\Policies\\Microsoft\\Windows\\Explorer','DisableSearchBoxSuggestions',D,1)]),
+  T('stHigh','Disable search highlights','Removes the daily pictures and trending content from the search box and the search window.',()=>[HU(CV+'SearchSettings','IsDynamicSearchBoxEnabled',D,0),HK(P+'Windows Search','EnableDynamicContentInWSB',D,0)])]}
 ]};
 const tExp={id:'explorador',title:'File Explorer',groups:[
  {title:'View',opts:[
@@ -359,11 +433,14 @@ const tExp={id:'explorador',title:'File Explorer',groups:[
   T('exHid','Show hidden files and folders',null,()=>[HU(ADV,'Hidden',D,1)]),
   T('exPath','Show full path in the title bar',null,()=>[HU(CV+'Explorer\\CabinetState','FullPath',D,1)]),
   T('exCompact','Compact view (less spacing)',null,()=>[HU(ADV,'UseCompactMode',D,1)]),
-  T('exCtx','Classic context menu (Windows 11)',null,()=>[HU('Software\\Classes\\CLSID\\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}\\InprocServer32',null,Z,'')])]},
+  T('exCtx','Classic context menu (Windows 11)',null,()=>[HU('Software\\Classes\\CLSID\\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}\\InprocServer32',null,Z,'')]),
+  T('exHome','Remove "Home" from the navigation pane (Windows 11)',null,()=>[HU('Software\\Classes\\CLSID\\{f874310e-b6b7-47dc-bc84-b9e6b38f5903}','System.IsPinnedToNameSpaceTree',D,0)]),
+  T('exGallery','Remove "Gallery" from the navigation pane (Windows 11)',null,()=>[HU('Software\\Classes\\CLSID\\{e88865ea-0e1c-4e20-9aa6-edcd0212c87c}','System.IsPinnedToNameSpaceTree',D,0)])]},
  {title:'Behavior',opts:[
   SEL('exLaunch','Open File Explorer to',null,[NOCH,['1','This PC'],['2','Home / Quick access'],['3','Downloads']],'',v=>[HU(ADV,'LaunchTo',D,+v)]),
   T('exRecent','Do not show recent/frequent files',null,()=>[HU(CV+'Explorer','ShowRecent',D,0),HU(CV+'Explorer','ShowFrequent',D,0)]),
-  T('exSync','Hide sync provider notifications',null,()=>[HU(ADV,'ShowSyncProviderNotifications',D,0)])]}
+  T('exSync','Hide sync provider notifications',null,()=>[HU(ADV,'ShowSyncProviderNotifications',D,0)]),
+  T('longPath','Enable long paths (more than 260 characters)','For programs that support it, such as Git, Node.js and Python.',()=>[HK('SYSTEM\\CurrentControlSet\\Control\\FileSystem','LongPathsEnabled',D,1)])]}
 ]};
 
 /* ---------- Windows apps ---------- */
@@ -389,7 +466,11 @@ const tSoft={id:'software',title:'Software (winget)',groups:[
   T('nvOn','Install the NVIDIA driver','Runs the installer with -s -noreboot (silent, no restart).',null,false),
   TXT('nvPath','Installer path',null,'C:\\Drivers\\NVIDIA\\setup.exe',{show:s=>s.nvOn})]},
  {title:'Extra registry settings',gd:'Advanced. One setting per line: HIVE\\Path|Name|TYPE|Data. HIVE is HKLM or HKCU (HKCU follows the "per-user tweaks" scope in the User account tab). Use (Default) as the name for the default value. Imported files put here the registry settings that match no option of this page.',opts:[
-  {id:'xreg',type:'textarea',label:'Registry settings',desc:null,def:'',ph:'HKLM\\SOFTWARE\\Policies\\Microsoft\\Edge|HideFirstRunExperience|REG_DWORD|1\nHKCU\\Control Panel\\Desktop|DragFullWindows|REG_SZ|1'}]}
+  {id:'xreg',type:'textarea',label:'Registry settings',desc:null,def:'',ph:'HKLM\\SOFTWARE\\Policies\\Microsoft\\Edge|HideFirstRunExperience|REG_DWORD|1\nHKCU\\Control Panel\\Desktop|DragFullWindows|REG_SZ|1'}]},
+ {title:'Your own scripts',gd:'Advanced. Run your own commands or a script of yours (for example Programas.cmd or Drivers.cmd) as part of the installation. Errors are written to the logs in C:\\ProgramData\\WinTweaks.',opts:[
+  TXT('runFile','Run a file from the USB drive at first sign-in','Path relative to the root of the drive, e.g. Scripts\\Programas.cmd. Every drive is searched, so a file copied to C:\\ through sources\\$OEM$\\$1 is found too. .cmd, .bat, .ps1, .exe and .msi are supported; it runs after the network is up and waits until it ends.',''),
+  {id:'cmdSys',type:'textarea',label:'PowerShell during setup (specialize pass, as SYSTEM)',desc:'Runs before any user exists: system settings, services, files. Runs after all the other tweaks.',def:'',ph:'Set-Service -Name Spooler -StartupType Manual'},
+  {id:'cmdLogon',type:'textarea',label:'PowerShell at the first sign-in (as the user)',desc:'Runs once for the first account, after winget. Administrator accounts run it elevated.',def:'',ph:'New-Item -ItemType Directory -Path "$env:USERPROFILE\\Projects" -Force'}]}
 ]};
 const tGen={id:'gerar',title:'Generate XML',groups:[]};
 
@@ -406,7 +487,7 @@ const REC={
  notificacoes:{on:['tips','lockTips','welcome']},
  tema:{set:{theme:'dark'}},
  barra:{on:['tbTask','tbWid','tbChat','tbCop'],set:{tbAlign:'0'}},
- iniciar:{on:['stIris','stWeb']},
+ iniciar:{on:['stIris','stWeb','stHigh']},
  explorador:{on:['exExt','exHid','exCtx','exRecent','exSync'],set:{exLaunch:'1'}},
  apps:{on:['od','ax_Microsoft.BingNews','ax_Microsoft.BingWeather','ax_Microsoft.GetHelp','ax_Microsoft.Getstarted','ax_Microsoft.MicrosoftOfficeHub','ax_Microsoft.MicrosoftSolitaireCollection','ax_Microsoft.WindowsFeedbackHub','ax_Microsoft.YourPhone','ax_Clipchamp.Clipchamp','ax_Microsoft.Copilot','ax_Microsoft.549981C3F5F10']}
 };
@@ -496,14 +577,13 @@ const SVCS=[
  ['sv_insider','Windows Insider and Wi-Fi Direct','wisvc, WFDSConMgrSvc, lltdsvc (link-layer topology).',['wisvc','WFDSConMgrSvc','lltdsvc'],'perf'],
  ['sv_wmp','Media Player network sharing','WMPNetworkSvc.',['WMPNetworkSvc'],'perf'],
  ['sv_scard','Smart cards','SCardSvr, ScDeviceEnum, CertPropSvc. Disable only if you never use smart cards.',['SCardSvr','ScDeviceEnum','CertPropSvc'],'perf'],
- ['sv_geo','Geolocation','lfsvc. Maps and weather lose automatic location.',['lfsvc'],'perf'],
+ ['sv_geo','Geolocation','lfsvc. Maps, weather and the automatic time zone lose the location.',['lfsvc'],'perf'],
  ['sv_xbox','Xbox services','XblAuthManager, XblGameSave, XboxNetApiSvc, XboxGipSvc. Breaks Game Pass, Xbox sign-in and cloud saves of Xbox titles.',['XblAuthManager','XblGameSave','XboxNetApiSvc','XboxGipSvc'],'game'],
  ['sv_print','Printing','Spooler, PrintNotify. You will not be able to print.',['Spooler','PrintNotify'],'game'],
  ['sv_rdp','Remote Desktop host','TermService, SessionEnv, UmRdpService.',['TermService','SessionEnv','UmRdpService'],'game'],
  ['sv_share','File and printer sharing (server)','LanmanServer, Netlogon. Other PCs cannot reach your shares.',['LanmanServer','Netlogon'],'game'],
  ['sv_disco','Network discovery','SSDPSRV, upnphost, FDResPub, fdPHost. The PC stops appearing in the network list.',['SSDPSRV','upnphost','FDResPub','fdPHost'],'game'],
  ['sv_bio','Windows Hello biometrics','WbioSrvc. Fingerprint and face sign-in stop working.',['WbioSrvc'],'game'],
- ['sv_doSvc','Delivery Optimization','DoSvc. Updates and Store downloads come only from Microsoft.',['DoSvc'],'game'],
  ['sv_sensor','Sensors','SensrSvc, SensorService, SensorDataService.',['SensrSvc','SensorService','SensorDataService'],'game'],
  ['sv_scan','Scanners and cameras (WIA)','StiSvc.',['StiSvc'],'game'],
  ['sv_hv','Hyper-V guest services','vmicguestinterface, vmicheartbeat, vmickvpexchange, vmicrdv, vmicshutdown, vmictimesync, vmicvmsession, vmicvss.',['vmicguestinterface','vmicheartbeat','vmickvpexchange','vmicrdv','vmicshutdown','vmictimesync','vmicvmsession','vmicvss'],'game'],
@@ -532,8 +612,8 @@ REC.servicos={on:SVL.perf.slice()};
 PRESETS.gam.on=uniq([].concat(
  ['telem','adId','errRep','activity','consumer','widgets','web','copilot','recall'],
  ['hags','gmode','dvr','xbar','mm','mouse','prio','visfx','bgapps','sysmain','wsearch'],
- ['hiber','fast','usbss'],['noReboot','noDrv'],['tips','lockTips','welcome','toast','bootSnd'],
- ['tbWid','tbChat','tbCop','stIris','stWeb'],
+ ['hiber','fast','usbss'],['noReboot','noDrv','doff'],['tips','lockTips','welcome','toast','bootSnd','sticky'],
+ ['tbWid','tbChat','tbCop','stIris','stWeb','stHigh'],
  LEV.ult,SVL.game));
 PRESETS.gam.set={plan:'ultimate',theme:'dark',monAc:'0',stdAc:'0'};
 recAll.on.push(...SVL.perf);
@@ -1085,11 +1165,116 @@ Object.assign(PT,{
  "The NVIDIA package is not found after the install: check that the folder is sources\\$OEM$\\$1\\Drivers\\NVIDIA at ISO level and that you copied the unpacked files, not a .zip.":"O pacote NVIDIA não é encontrado depois da instalação: confirme que a pasta é sources\\$OEM$\\$1\\Drivers\\NVIDIA ao nível do ISO e que copiou os ficheiros extraídos, não um .zip.",
  "7-Zip and most archive tools can add files to an ISO but cannot make it bootable again: use oscdimg for the final ISO.":"O 7-Zip e a maioria das ferramentas de arquivo conseguem juntar ficheiros a um ISO mas não o tornam de novo de arranque: use o oscdimg para o ISO final.",
 });
+Object.assign(PT,{
+ /* language, keyboard, edition */
+ "Detect from this browser":"Detetar a partir deste browser",
+ "Fills in the language, regional format, keyboard, country and time zone used by this browser.":"Preenche o idioma, o formato regional, o teclado, o país e o fuso horário usados por este browser.",
+ "Dates, numbers, currency and the language for non-Unicode programs. Leave as is to follow the Windows language, or choose another one (e.g. English Windows with Portuguese dates).":"Datas, números, moeda e o idioma dos programas não Unicode. Deixe como está para seguir o idioma do Windows ou escolha outro (ex.: Windows em inglês com datas portuguesas).",
+ "Keyboard code":"Código do teclado",
+ "Format LLLL:KKKKKKKK (for example 0816:00000816) or a language name such as pt-PT. Several layouts can be separated with \";\".":"Formato LLLL:KKKKKKKK (por exemplo 0816:00000816) ou o nome de um idioma, como pt-PT. Vários esquemas podem ser separados por \";\".",
+ "Second keyboard (optional)":"Segundo teclado (opcional)",
+ "Added to the language bar, for example English (US) next to your own layout.":"Fica disponível na barra de idiomas, por exemplo Inglês (EUA) ao lado do seu esquema.",
+ "Other (enter the code)…":"Outro (introduzir o código)…",
+ "Arabic (101)":"Árabe (101)","Belgian (Period)":"Belga (Ponto)","Belgian French":"Francês (Bélgica)","Bulgarian":"Búlgaro","Canadian French":"Francês (Canadá)",
+ "Chinese Simplified (Microsoft Pinyin)":"Chinês Simplificado (Microsoft Pinyin)","Chinese Traditional (Microsoft Bopomofo)":"Chinês Tradicional (Microsoft Bopomofo)",
+ "Croatian":"Croata","Czech":"Checo","Danish":"Dinamarquês","Dutch (US International)":"Neerlandês (EUA Internacional)","English (UK Extended)":"Inglês (Reino Unido Expandido)",
+ "English (US International)":"Inglês (EUA Internacional)","Estonian":"Estónio","Finnish":"Finlandês","Greek":"Grego","Hebrew (Standard)":"Hebraico (Padrão)","Hungarian":"Húngaro",
+ "Irish":"Irlandês","Italian":"Italiano","Japanese (Microsoft IME)":"Japonês (Microsoft IME)","Korean (Microsoft IME)":"Coreano (Microsoft IME)","Latin American":"Espanhol (América Latina)",
+ "Latvian (Standard)":"Letão (Padrão)","Lithuanian":"Lituano","Norwegian":"Norueguês","Polish (Programmers)":"Polaco (Programadores)","Portuguese (Brazil ABNT)":"Português (Brasil ABNT)",
+ "Romanian (Standard)":"Romeno (Padrão)","Russian":"Russo","Serbian (Latin)":"Sérvio (Latino)","Slovak":"Eslovaco","Slovenian":"Esloveno","Swedish":"Sueco","Swiss French":"Francês (Suíça)",
+ "Swiss German":"Alemão (Suíça)","Thai Kedmanee":"Tailandês Kedmanee","Turkish Q":"Turco Q","Ukrainian (Enhanced)":"Ucraniano (Avançado)",
+ "Home Single Language (generic key)":"Home Single Language (chave genérica)","Home N (generic key)":"Home N (chave genérica)","Pro N (generic key)":"Pro N (chave genérica)",
+ "Pro Education (generic key)":"Pro Education (chave genérica)","Pro for Workstations (generic key)":"Pro for Workstations (chave genérica)",
+ /* installation */
+ "Automatically partition and wipe the disk":"Particionar e apagar o disco automaticamente",
+ "ERASES the whole disk chosen below without asking, then installs Windows on it.":"APAGA todo o disco escolhido abaixo sem perguntar e instala nele o Windows.",
+ "Disk number":"Número do disco",
+ "The number shown by diskpart (list disk) or by Disk Management. 0 is usually the first internal disk.":"O número mostrado pelo diskpart (list disk) ou pela Gestão de Discos. O 0 é normalmente o primeiro disco interno.",
+ "Partition layout":"Esquema de partições",
+ "GPT for UEFI PCs: EFI + MSR + Windows":"GPT para PCs UEFI: EFI + MSR + Windows",
+ "MBR for BIOS (legacy) PCs: System Reserved + Windows":"MBR para PCs BIOS (legacy): Reservado pelo Sistema + Windows",
+ "Disables the adapters until the first sign-in. Avoids a forced Microsoft account and mid-setup Windows Update downloads. They are turned back on automatically, for any account type.":"Desativa os adaptadores até ao primeiro início de sessão. Evita a conta Microsoft forçada e downloads do Windows Update a meio. São reativados automaticamente, para qualquer tipo de conta.",
+ "Delete the setup scripts and the cached answer file after the next restart":"Apagar os scripts de instalação e a cópia do ficheiro de respostas depois do reinício seguinte",
+ "Removes C:\\Windows\\Panther\\unattend*.xml and the scripts in C:\\ProgramData\\WinTweaks (the logs stay). Recommended when the XML contains passwords.":"Remove C:\\Windows\\Panther\\unattend*.xml e os scripts de C:\\ProgramData\\WinTweaks (os registos ficam). Recomendado quando o XML contém palavras-passe.",
+ "Passwords of local accounts never expire":"As palavras-passe das contas locais nunca expiram",
+ "Sets the maximum password age to unlimited during setup, so it also covers accounts created in OOBE and standard users.":"Define a idade máxima da palavra-passe como ilimitada durante a instalação, por isso também abrange contas criadas no OOBE e utilizadores padrão.",
+ /* network */
+ "Saves a Wi-Fi profile and connects at the first sign-in (adapters are re-enabled first when \"Disable the network during setup\" is on). Network settings run as SYSTEM, so they work for standard accounts too. The Software (winget) tab needs this or a cable.":"Guarda um perfil Wi-Fi e liga-se no primeiro início de sessão (os adaptadores são reativados antes se «Desligar a rede durante a instalação» estiver ativo). As definições de rede correm como SYSTEM, por isso também funcionam com contas padrão. O separador Software (winget) precisa disto ou de cabo.",
+ "Needs a Wi-Fi adapter. Names with accents and symbols are supported.":"Requer um adaptador Wi-Fi. Nomes com acentos e símbolos são suportados.",
+ "Overwrites it in firstboot.ps1 and in C:\\Windows\\Panther once the profile is saved. The XML on your USB drive keeps it.":"Apaga-a em firstboot.ps1 e em C:\\Windows\\Panther depois de guardar o perfil. O XML no seu pendrive mantém-na.",
+ /* privacy, performance, sound, keyboard */
+ "User Account Control (UAC)":"Controlo de Conta de Utilizador (UAC)",
+ "UAC stays on in every mode. \"Never notify\" elevates administrators silently, which also lets malware do it.":"O UAC fica ligado em todos os modos. «Nunca notificar» eleva os administradores sem perguntar, o que também permite ao malware fazê-lo.",
+ "Notify without dimming the desktop":"Notificar sem escurecer o ambiente de trabalho",
+ "Never notify (not recommended)":"Nunca notificar (não recomendado)",
+ "Turn off SmartScreen for apps and files":"Desligar o SmartScreen para apps e ficheiros",
+ "Windows stops checking downloaded programs against Microsoft's reputation service. Not recommended.":"O Windows deixa de verificar os programas transferidos no serviço de reputação da Microsoft. Não recomendado.",
+ "Turn off Memory Integrity and virtualization-based security":"Desligar a Integridade da Memória e a segurança baseada em virtualização",
+ "Can add a few FPS in games, but removes a protection against kernel malware. Not part of any preset.":"Pode dar alguns FPS a mais nos jogos, mas retira uma proteção contra malware no kernel. Não faz parte de nenhuma predefinição.",
+ "Turns off animations, shadows and fades. Font smoothing stays on.":"Desliga animações, sombras e transições. A suavização de tipos de letra continua ligada.",
+ "Selects the \"No Sounds\" scheme and clears the sound of every event.":"Escolhe o esquema «Sem Sons» e limpa o som de todos os eventos.",
+ "Turn on Num Lock at startup":"Ligar o Num Lock no arranque",
+ "On the sign-in screen and for the new accounts.":"No ecrã de início de sessão e nas contas novas.",
+ "Disable the Sticky Keys shortcut (pressing Shift five times)":"Desativar o atalho das Teclas Fixas (carregar cinco vezes em Shift)",
+ "Stops the Sticky Keys prompt from appearing in games.":"Impede que o aviso das Teclas Fixas apareça nos jogos.",
+ /* taskbar, Start, Explorer */
+ "Show \"End task\" when right-clicking an app":"Mostrar «Terminar tarefa» ao clicar com o botão direito numa app",
+ "Windows 11 23H2 and later: closes a frozen program from the taskbar.":"Windows 11 23H2 e posterior: fecha um programa bloqueado a partir da barra de tarefas.",
+ "Disable search highlights":"Desativar os destaques da pesquisa",
+ "Removes the daily pictures and trending content from the search box and the search window.":"Remove as imagens do dia e os conteúdos em destaque da caixa e da janela de pesquisa.",
+ "Remove \"Home\" from the navigation pane (Windows 11)":"Remover «Início» do painel de navegação (Windows 11)",
+ "Remove \"Gallery\" from the navigation pane (Windows 11)":"Remover «Galeria» do painel de navegação (Windows 11)",
+ "Enable long paths (more than 260 characters)":"Ativar caminhos longos (mais de 260 caracteres)",
+ "For programs that support it, such as Git, Node.js and Python.":"Para os programas que o suportam, como Git, Node.js e Python.",
+ "lfsvc. Maps, weather and the automatic time zone lose the location.":"lfsvc. Mapas, meteorologia e o fuso horário automático perdem a localização.",
+ /* your own scripts */
+ "Your own scripts":"Os seus scripts",
+ "Advanced. Run your own commands or a script of yours (for example Programas.cmd or Drivers.cmd) as part of the installation. Errors are written to the logs in C:\\ProgramData\\WinTweaks.":"Avançado. Corra os seus próprios comandos ou um script seu (por exemplo Programas.cmd ou Drivers.cmd) durante a instalação. Os erros ficam nos registos em C:\\ProgramData\\WinTweaks.",
+ "Run a file from the USB drive at first sign-in":"Correr um ficheiro do pendrive no primeiro início de sessão",
+ "Path relative to the root of the drive, e.g. Scripts\\Programas.cmd. Every drive is searched, so a file copied to C:\\ through sources\\$OEM$\\$1 is found too. .cmd, .bat, .ps1, .exe and .msi are supported; it runs after the network is up and waits until it ends.":"Caminho a partir da raiz da unidade, ex.: Scripts\\Programas.cmd. São procuradas todas as unidades, por isso um ficheiro copiado para C:\\ através de sources\\$OEM$\\$1 também é encontrado. Suporta .cmd, .bat, .ps1, .exe e .msi; corre depois de a rede estar disponível e espera até terminar.",
+ "PowerShell during setup (specialize pass, as SYSTEM)":"PowerShell durante a instalação (fase specialize, como SYSTEM)",
+ "Runs before any user exists: system settings, services, files. Runs after all the other tweaks.":"Corre antes de existir qualquer utilizador: definições do sistema, serviços, ficheiros. Corre depois de todos os outros ajustes.",
+ "PowerShell at the first sign-in (as the user)":"PowerShell no primeiro início de sessão (como o utilizador)",
+ "Runs once for the first account, after winget. Administrator accounts run it elevated.":"Corre uma vez para a primeira conta, depois do winget. As contas de administrador correm-no com privilégios elevados.",
+ /* search, link, summary, preview */
+ "Search options…":"Pesquisar opções…",
+ "Search options":"Pesquisar opções",
+ "Sections":"Secções",
+ "Search results":"Resultados da pesquisa",
+ "Clear search":"Limpar pesquisa",
+ "Open this tab":"Abrir este separador",
+ "No option matches your search.":"Nenhuma opção corresponde à pesquisa.",
+ "Copy link to this configuration":"Copiar ligação para esta configuração",
+ "Passwords, the Wi-Fi password and product keys are left out of the link.":"As palavras-passe, a palavra-passe do Wi-Fi e as chaves de produto ficam de fora da ligação.",
+ "Configuration loaded from the link. Passwords and product keys are never included in links.":"Configuração carregada a partir da ligação. As palavras-passe e as chaves de produto nunca são incluídas nas ligações.",
+ "The configuration link is damaged: ":"A ligação de configuração está danificada: ",
+ "Summary of your choices":"Resumo das suas escolhas",
+ "The scripts below are embedded in the XML and written to C:\\ProgramData\\WinTweaks during setup, together with their logs.":"Os scripts abaixo estão embebidos no XML e são gravados em C:\\ProgramData\\WinTweaks durante a instalação, juntamente com os registos.",
+ "firstboot.ps1 (first sign-in, runs as SYSTEM: network, power, drivers)":"firstboot.ps1 (primeiro início de sessão, como SYSTEM: rede, energia, drivers)",
+ "firstlogon.ps1 (first sign-in, runs as the user)":"firstlogon.ps1 (primeiro início de sessão, como o utilizador)",
+ "your own file (Software tab), at this path from the root of the USB drive or ISO":"o seu ficheiro (separador Software), neste caminho a partir da raiz do pendrive ou do ISO",
+ "Warning: with the automatic disk partitioning option, an unattended install erases the selected disk without asking as soon as the PC boots from this media. Label the ISO and the USB drive clearly and do not leave them connected when you restart a PC you want to keep.":"Atenção: com a opção de partição automática do disco, uma instalação sem supervisão apaga o disco escolhido sem perguntar assim que o PC arranca deste suporte. Identifique bem o ISO e o pendrive e não os deixe ligados quando reiniciar um PC que quer manter.",
+ /* notes on the Generate tab */
+ "The keyboard code is not valid (format LLLL:KKKKKKKK or a language name): the default keyboard of the Windows language is used.":"O código do teclado não é válido (formato LLLL:KKKKKKKK ou nome de idioma): é usado o teclado predefinido do idioma do Windows.",
+ "Invalid disk number: disk 0 will be used.":"Número de disco inválido: será usado o disco 0.",
+ "Disk {n} will be ERASED without confirmation and partitioned as {style}.":"O disco {n} será APAGADO sem confirmação e particionado em {style}.",
+ "ARM64 PCs start only with UEFI: choose the GPT layout.":"Os PCs ARM64 só arrancam com UEFI: escolha o esquema GPT.",
+ "The account is a standard user, so this PC will have no administrator account. Choose Administrator unless someone else manages the PC.":"A conta é de utilizador padrão, por isso este PC não terá nenhuma conta de administrador. Escolha Administrador, a não ser que outra pessoa gira o PC.",
+ "With a standard account, Windows asks for an administrator password before it runs the first sign-in script (region, per-user settings, winget and your commands). Network, power and driver settings do not need it.":"Com uma conta padrão, o Windows pede a palavra-passe de um administrador antes de correr o script do primeiro início de sessão (região, definições do utilizador, winget e os seus comandos). As definições de rede, energia e drivers não precisam disso.",
+ "The network is set to Private, but file sharing or network discovery is disabled in Windows services: the PC will not be visible on the network.":"A rede fica definida como Privada, mas a partilha de ficheiros ou a deteção de rede estão desativadas em Serviços do Windows: o PC não ficará visível na rede.",
+ "Memory Integrity and virtualization-based security will be turned off: Windows loses a protection against kernel malware.":"A Integridade da Memória e a segurança baseada em virtualização serão desligadas: o Windows perde uma proteção contra malware no kernel.",
+ "SmartScreen will be turned off: downloaded programs are no longer checked.":"O SmartScreen será desligado: os programas transferidos deixam de ser verificados.",
+ "UAC is set to \"Never notify\": programs started by an administrator get full rights without asking.":"O UAC fica em «Nunca notificar»: os programas iniciados por um administrador recebem todos os direitos sem perguntar.",
+ "Keep the USB drive connected until the desktop appears: your file is searched on every drive at the first sign-in.":"Mantenha o pendrive ligado até aparecer o ambiente de trabalho: o seu ficheiro é procurado em todas as unidades no primeiro início de sessão.",
+ "Your own PowerShell commands are included as they are: check them in the script preview below.":"Os seus comandos PowerShell são incluídos tal como estão: confirme-os na pré-visualização dos scripts abaixo."
+});
 DICTS.pt=PT;
 /* ---------- state ---------- */
 let S={},cur='windows';
 const allOpts=()=>tabs.flatMap(t=>t.groups.flatMap(g=>g.opts));
 const byId=id=>allOpts().find(o=>o.id===id);
+/* the defaults for language, keyboard and time zone follow this browser (en-US, US keyboard and "ask" otherwise) */
+{const b=browserLocale();for(const k of ['lang','kbd','tz'])if(b[k])byId(k).def=b[k]}
 function defaults(){S={};for(const o of allOpts())S[o.id]=o.def}
 function save(){try{localStorage.setItem('wh-autounattend',JSON.stringify(S))}catch(e){}}
 function load(){try{const j=JSON.parse(localStorage.getItem('wh-autounattend')||'null');if(j)merge(j)}catch(e){}}
@@ -1122,14 +1307,15 @@ function tabKey(e){
  e.preventDefault();
  let i=tabs.findIndex(t=>t.id===cur);
  i=k==='Home'?0:k==='End'?tabs.length-1:(i+(k==='ArrowRight'?1:-1)+tabs.length)%tabs.length;
- cur=tabs[i].id;refresh(true);
+ cur=tabs[i].id;if(Q){Q='';$('#q').value=''}refresh(true);
  const b=document.getElementById('tab-'+cur);if(b)b.focus();
 }
 function renderTabs(scroll){
  const box=$('#tabs');box.innerHTML='';
  for(const t of tabs){
-  const n=t.id==='gerar'?0:count(t),sel=t.id===cur;
-  box.append(el('button',{role:'tab',id:'tab-'+t.id,'aria-selected':String(sel),'aria-current':sel?'page':null,tabindex:sel?'0':'-1',onclick:()=>{cur=t.id;refresh(true)},onkeydown:tabKey},
+  /* while searching, no tab is shown as selected (the results come from every tab) */
+  const n=t.id==='gerar'?0:count(t),sel=t.id===cur&&!Q.trim();
+  box.append(el('button',{role:'tab',id:'tab-'+t.id,'aria-selected':String(sel),'aria-controls':'panel','aria-current':sel?'page':null,tabindex:t.id===cur?'0':'-1',onclick:()=>{cur=t.id;if(Q){Q='';$('#q').value=''}refresh(true)},onkeydown:tabKey},
    el('span',{class:'ic','aria-hidden':'true',text:ICONS[t.id]||''}),tr(t.title),n?el('span',{class:'badge',text:n}):null));
  }
  const b=box.querySelector('[aria-selected=true]');
@@ -1197,9 +1383,29 @@ function panelHead(t){
  }
  return el('div',{class:'ph'},el('h2',{text:(ICONS[t.id]||'')+' '+tr(t.title)}),tools);
 }
+/* select options with their labels in the interface language; region lists use Intl.DisplayNames */
+let REGION_NAMES=null,REGION_LANG='';
+function regionName(cc,fallback){
+ if(!cc)return fallback;
+ try{
+  if(REGION_LANG!==LANG){REGION_NAMES=new Intl.DisplayNames([UILANGS.find(l=>l.code===LANG).html],{type:'region'});REGION_LANG=LANG}
+  return REGION_NAMES.of(cc)||fallback;
+ }catch(e){return fallback}
+}
+function selOpts(o){
+ const lab=x=>x[0]===''||x[0]==='custom'?tr(x[1]):o.region?regionName(x[2],tr(x[1])):o.raw?x[1]:tr(x[1]);
+ let l=o.opts.map(x=>[x[0],lab(x)]);
+ if(o.sort||o.region){
+  const fixed=v=>v===''||v==='custom';
+  const mid=l.filter(x=>!fixed(x[0])).sort((a,b)=>a[1].localeCompare(b[1],undefined,{sensitivity:'base'}));
+  l=[...l.filter(x=>x[0]===''),...mid,...l.filter(x=>x[0]==='custom')];
+ }
+ return l;
+}
 function field(o){
- const v=S[o.id];
- const head=el('span',{class:'t'},el('b',{text:tr(o.label)}),o.desc?el('small',{text:tr(o.desc)}):null);
+ const v=S[o.id],fid='f-'+o.id;
+ const desc=o.desc?el('small',{text:tr(o.desc)}):null;
+ const head=o.type==='toggle'||o.type==='button'?el('span',{class:'t'},el('b',{text:tr(o.label)}),desc):el('label',{class:'t',for:fid},el('b',{text:tr(o.label)}),desc);
  if(o.type==='toggle'){
   const i=el('input',{type:'checkbox',onchange:e=>{S[o.id]=e.target.checked;save();refresh()}});
   i.checked=!!v;
@@ -1208,20 +1414,45 @@ function field(o){
  if(o.type==='button')return el('div',{class:'row'},head,el('button',{onclick:()=>{o.run();save();refresh()}},tr(o.label)));
  let inp;
  if(o.type==='select'){
-  inp=el('select',{onchange:e=>{S[o.id]=e.target.value;save();refresh()}},o.opts.map(([a,b])=>el('option',{value:a,text:o.raw?b:tr(b)})));
+  inp=el('select',{id:fid,onchange:e=>{S[o.id]=e.target.value;save();refresh()}},selOpts(o).map(([a,b])=>el('option',{value:a,text:b})));
   inp.value=v;
+  /* a value that is not in the list (e.g. from an older config) is kept and shown as it is */
+  if(inp.value!==String(v)&&v){inp.append(el('option',{value:v,text:String(v)}));inp.value=v}
  }else if(o.type==='textarea'){
-  inp=el('textarea',{spellcheck:'false',placeholder:o.ph||'7zip.7zip\nVideoLAN.VLC',onchange:e=>{S[o.id]=e.target.value;save();refresh()}});
+  inp=el('textarea',{id:fid,spellcheck:'false',placeholder:o.ph||'7zip.7zip\nVideoLAN.VLC',onchange:e=>{S[o.id]=e.target.value;save();refresh()}});
   inp.value=v;
   return el('div',{class:'row full'},head,inp);
  }else{
-  inp=el('input',{type:o.type==='password'?'password':'text',autocomplete:'off',onchange:e=>{S[o.id]=e.target.value.trim();save();refresh()}});
+  inp=el('input',{id:fid,type:o.type==='password'?'password':'text',autocomplete:'off',spellcheck:'false',onchange:e=>{S[o.id]=e.target.value.trim();save();refresh()}});
   inp.value=v;
  }
  return el('div',{class:'row'},head,inp);
 }
+/* search across every tab */
+let Q='';
+const fold=s=>String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
+function setQuery(v){Q=v;const i=$('#q');if(i&&i.value!==v)i.value=v;refresh(true)}
+function renderSearch(p){
+ const words=fold(Q).split(/\s+/).filter(Boolean);
+ p.append(el('div',{class:'ph'},el('h2',{text:'🔎 '+tr('Search results')}),el('div',{class:'tools'},el('button',{onclick:()=>setQuery('')},tr('Clear search')))));
+ let n=0;
+ for(const t of tabs){
+  if(t.id==='gerar')continue;
+  const hits=[];
+  for(const g of t.groups)for(const o of g.opts){
+   if(o.show&&!o.show(S))continue;
+   const hay=fold([o.id,o.label,tr(o.label),o.desc,tr(o.desc),g.title,tr(g.title),...(o.opts?selOpts(o).map(x=>x[1]):[])].join(' '));
+   if(words.every(w=>hay.includes(w)))hits.push(o);
+  }
+  if(!hits.length)continue;
+  n+=hits.length;
+  p.append(el('section',{class:'card'},el('h2',{},el('button',{class:'link',title:tr('Open this tab'),onclick:()=>{cur=t.id;setQuery('')}},(ICONS[t.id]||'')+' '+tr(t.title))),hits.map(field)));
+ }
+ if(!n)p.append(el('p',{class:'hint',text:tr('No option matches your search.')}));
+}
 function renderPanel(){
  const p=$('#panel');p.innerHTML='';
+ if(Q.trim())return renderSearch(p);
  const t=tabs.find(x=>x.id===cur);
  p.append(panelHead(t));
  if(t.id==='debloat')p.append(levelCards());
@@ -1252,29 +1483,49 @@ function softExtras(){
 }
 function refresh(keepTop){
  const y=window.scrollY;renderTabs(keepTop);renderImport();renderPanel();
+ $('#panel').setAttribute('aria-labelledby','tab-'+cur);
  window.scrollTo(0,keepTop?0:y);
 }
 /* ---------- script and XML generator ---------- */
 const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 const psq=s=>String(s).replace(/'/g,"''");
-const KEYS={pro:'VK7JG-NPHTM-C97JM-9MPGT-3V66T',home:'YTMG3-N6DKC-DKB77-7M9GH-8HVX7',ent:'XGVPP-NMH47-7TTHJ-W3FW7-8HV2C',edu:'YNMGQ-8RYV3-4PGQ3-C8XTP-7CFBY'};
+/* text inside <![CDATA[ ]]>: a "]]>" in a script would close the section early, so it is split in two sections */
+const cdata=s=>'<![CDATA['+String(s).split(']]>').join(']]]]><![CDATA[>')+']]>';
+/* notes may contain {placeholders} filled after translation */
+const fmt=(s,v)=>v?String(s).replace(/\{(\w+)\}/g,(m,k)=>k in v?v[k]:m):s;
+const KEYS={pro:'VK7JG-NPHTM-C97JM-9MPGT-3V66T',home:'YTMG3-N6DKC-DKB77-7M9GH-8HVX7',homeSl:'BT79Q-G7N6G-PGBYW-4YWX6-6F4BT',homeN:'4CPRK-NM3K3-X6XXQ-RXX86-WXCHW',proN:'2B87N-8KFHP-DKV6R-Y2C8J-PKCKT',proEdu:'8PTT6-RNW4C-6V7J2-C2D3X-MHBPB',proWs:'DXG7C-N36C4-C4HTG-X4T3X-2YV77',ent:'XGVPP-NMH47-7TTHJ-W3FW7-8HV2C',edu:'YNMGQ-8RYV3-4PGQ3-C8XTP-7CFBY'};
 const EXTRACT='powershell -NoProfile -Command "$x=[xml](gc C:\\Windows\\Panther\\unattend.xml -Raw);foreach($f in $x.unattend.Extensions.File){md (Split-Path $f.path) -Force|Out-Null;sc $f.path $f.InnerText -Encoding UTF8}"';
 const wgIds=()=>S.wg.split(/\r?\n/).map(s=>s.trim()).filter(s=>/^[A-Za-z0-9._+-]+$/.test(s));
+const TASK='WinTweaks-FirstBoot';
+const DEFROOT='Registry::HKEY_USERS\\WH_DEF';
+/* keyboard: one or more InputLocale values separated by ";" */
+/* LLLL:KKKKKKKK, LLLL:{IME}{profile} or a language name such as pt-PT (its default keyboard) */
+const KBDRE=/^([0-9a-f]{4}:([0-9a-f]{8}|\{[0-9a-f-]{36}\}\{[0-9a-f-]{36}\})|[a-z]{2,3}(-[a-z0-9]{2,8})*)$/i;
+function inputLocale(){
+ const first=S.kbd==='custom'?String(S.kbdCustom||''):String(S.kbd||'');
+ const list=first.split(';').map(x=>x.trim()).filter(Boolean);
+ if(S.kbd2&&!list.some(x=>x.toLowerCase()===S.kbd2.toLowerCase()))list.push(S.kbd2);
+ return list.join(';');
+}
+const kbdOk=()=>{const l=inputLocale().split(';');return l[0]!==''&&l.every(x=>KBDRE.test(x))};
 
-/* ---------- network: commands for the first-logon script ---------- */
+/* ---------- network: commands for the first sign-in (firstboot.ps1, runs as SYSTEM) ---------- */
 const IPV4=/^(25[0-5]|2[0-4]\d|1?\d?\d)(\.(25[0-5]|2[0-4]\d|1?\d?\d)){3}$/;
 const DNSP={cloudflare:['1.1.1.1','1.0.0.1'],google:['8.8.8.8','8.8.4.4'],quad9:['9.9.9.9','149.112.112.112']};
 const dnsList=()=>S.dnsMode==='custom'?[S.dnsPri,S.dnsSec].filter(Boolean):(DNSP[S.dnsMode]||[]);
 const dnsOk=()=>{const l=dnsList();return l.length>0&&l.every(x=>IPV4.test(x))};
 const staticOk=()=>S.ipMode==='static'&&IPV4.test(S.ipAddr)&&/^(\d|[12]\d|3[0-2])$/.test(S.ipPrefix)&&(!S.ipGw||IPV4.test(S.ipGw));
+const utf8=s=>new TextEncoder().encode(String(s));
 const wifiKeyOk=()=>S.wifiAuth==='open'||/^.{8,63}$/.test(S.wifiPass);
-const wifiReady=()=>!!(S.wifiOn&&S.wifiSsid&&S.wifiSsid.length<=32&&wifiKeyOk());
+const wifiReady=()=>!!(S.wifiOn&&S.wifiSsid&&utf8(S.wifiSsid).length<=32&&wifiKeyOk());
 function wifiXml(){
  const open=S.wifiAuth==='open';
  const auth=open?'open':S.wifiAuth==='wpa3'?'WPA3SAE':'WPA2PSK';
+ /* <hex> makes names with accents and symbols work; <name> is kept for display */
+ const hex=[...utf8(S.wifiSsid)].map(b=>b.toString(16).padStart(2,'0').toUpperCase()).join('');
  return ['<?xml version="1.0"?>','<WLANProfile xmlns="http://www.microsoft.com/networking/WLAN/profile/v1">',
   `<name>${esc(S.wifiSsid)}</name>`,
-  `<SSIDConfig><SSID><name>${esc(S.wifiSsid)}</name></SSID><nonBroadcast>${S.wifiHidden?'true':'false'}</nonBroadcast></SSIDConfig>`,
+  `<SSIDConfig><SSID><hex>${hex}</hex><name>${esc(S.wifiSsid)}</name></SSID><nonBroadcast>${S.wifiHidden?'true':'false'}</nonBroadcast></SSIDConfig>`,
   '<connectionType>ESS</connectionType>',`<connectionMode>${S.wifiAuto?'auto':'manual'}</connectionMode>`,
   '<MSM><security>',
   `<authEncryption><authentication>${auth}</authentication><encryption>${open?'none':'AES'}</encryption><useOneX>false</useOneX></authEncryption>`,
@@ -1282,7 +1533,7 @@ function wifiXml(){
   '</security></MSM>','</WLANProfile>'].join('\n');
 }
 function netFx(c){
- const L=c.logon,q=psq;
+ const L=c.net,q=psq;
  if(wifiReady()){
   L.push('# Wi-Fi profile',
    "if (Get-Service WlanSvc -ErrorAction SilentlyContinue) {",
@@ -1292,6 +1543,7 @@ function netFx(c){
    " Set-Content -LiteralPath $wp -Value $wx -Encoding UTF8",
    ' netsh wlan add profile filename="$wp" user=all | Out-Null',
    ' Remove-Item -LiteralPath $wp -Force');
+  if(S.wifiAuto&&!S.wifiSsid.includes('"'))L.push(` $wn = '${q(S.wifiSsid)}'`,' netsh wlan connect name="$wn" | Out-Null');
   if(S.wifiAuth!=='open'&&S.wifiClean)L.push(
    " $m = [regex]::Match($wx, '<keyMaterial>.*?</keyMaterial>')",
    " if ($m.Success) {",
@@ -1324,8 +1576,10 @@ function netFx(c){
  }
 }
 const XREG=/^(HKLM|HKCU)\\([^|"]+)\|([^|"]*)\|(REG_(?:DWORD|QWORD|SZ|EXPAND_SZ|BINARY|MULTI_SZ))\|([^"]*)$/i;
+/* everything the options ask for, sorted by where it runs:
+   reg (registry), ps (specialize, SYSTEM), net + boot (first sign-in, SYSTEM), psu (per-user PowerShell), appx (apps to remove) */
 function collect(){
- const c={reg:[],ps:[],logon:[],appx:[]};
+ const c={reg:[],ps:[],net:[],boot:[],psu:[],appx:[]};
  for(const o of allOpts()){
   if(!o.fx)continue;
   const v=S[o.id];
@@ -1334,7 +1588,8 @@ function collect(){
   for(const it of o.fx(v)||[]){
    if(it.k==='reg')c.reg.push(it);
    else if(it.k==='appx'){if(!c.appx.includes(it.n))c.appx.push(it.n)}
-   else (it.w==='sys'?c.ps:c.logon).push(it.l);
+   else if(it.k==='psu')c.psu.push(it.l);
+   else (it.w==='sys'?c.ps:c.boot).push(it.l);
   }
  }
  netFx(c);
@@ -1345,27 +1600,76 @@ function collect(){
  return c;
 }
 const ODRUN='reg delete "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run" /v "OneDriveSetup" /f | Out-Null';
-const regLine=(it,root)=>`reg add "${root}\\${it.p}" ${it.n===null?'/ve':'/v "'+it.n+'"'} /t ${it.t} /d ${it.t===Z||it.t==='REG_EXPAND_SZ'?'"'+it.d+'"':it.d} /f | Out-Null`;
+/* one reg.exe line. Arguments are PowerShell single-quoted strings, so "$" and "`" stay literal.
+   Windows PowerShell drops empty arguments, so an empty string value is written without /d (reg.exe stores "").
+   An argument with spaces that ends in "\" gets one more "\", because PowerShell wraps it in quotes. */
+const regArg=x=>{x=String(x);if(/\s/.test(x)&&/\\$/.test(x))x+='\\';return "'"+psq(x)+"'"};
+function regLine(it,root){
+ const empty=(it.d===''||it.d==null)&&/^REG_(SZ|EXPAND_SZ|MULTI_SZ)$/.test(it.t);
+ return `reg add ${regArg(root+'\\'+it.p)} ${it.n===null?'/ve':'/v '+regArg(it.n)} /t ${it.t}${empty?'':' /d '+regArg(it.d)} /f | Out-Null`;
+}
+const taskXml=(trigger,args,limit)=>['<Task version="1.2" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">',
+ ` <Triggers>${trigger}</Triggers>`,
+ ' <Principals><Principal id="Author"><UserId>S-1-5-18</UserId><RunLevel>HighestAvailable</RunLevel></Principal></Principals>',
+ ` <Settings><MultipleInstancesPolicy>IgnoreNew</MultipleInstancesPolicy><DisallowStartIfOnBatteries>false</DisallowStartIfOnBatteries><StopIfGoingOnBatteries>false</StopIfGoingOnBatteries><ExecutionTimeLimit>${limit}</ExecutionTimeLimit><Enabled>true</Enabled></Settings>`,
+ ` <Actions Context="Author"><Exec><Command>powershell.exe</Command><Arguments>${esc(args)}</Arguments></Exec></Actions>`,
+ '</Task>'];
+const regTask=(name,xml)=>["$task = @'",...xml,"'@",`Register-ScheduledTask -TaskName '${name}' -Xml $task -Force | Out-Null`,''];
+const CLEANUP=['# Delete the setup scripts and the cached answer file at the next startup (the logs stay)',
+ ...regTask('WinTweaks-Cleanup',taskXml('<BootTrigger><Enabled>true</Enabled></BootTrigger>',
+  '-NoProfile -ExecutionPolicy Bypass -Command "Get-ChildItem -LiteralPath C:\\Windows\\Panther -Filter unattend*.xml -Recurse -Force | Remove-Item -Force; Remove-Item -Path C:\\ProgramData\\WinTweaks\\*.ps1,C:\\ProgramData\\WinTweaks\\*.lock -Force; Unregister-ScheduledTask -TaskName WinTweaks-Cleanup -Confirm:$false"','PT1H'))];
+const custom=t=>['# >>> your commands',t,'# <<< your commands',''];
 
 function scripts(c){
  const hklm=c.reg.filter(r=>r.h==='HKLM'),hkcu=c.reg.filter(r=>r.h==='HKCU');
- const def=S.scope==='default',ids=wgIds(),local=S.accMode==='local';
+ const def=S.scope==='default',ids=wgIds();
+ const run=String(S.runFile||'').trim().replace(/^[\\/]+/,''),cs=String(S.cmdSys||'').trim(),cl=String(S.cmdLogon||'').trim();
  const head=n=>["$ErrorActionPreference = 'SilentlyContinue'",`Start-Transcript -Path "$env:ProgramData\\WinTweaks\\${n}.log" -Append | Out-Null`,''];
+ const perUser=!!(hkcu.length||c.psu.length||S.od);
+ const psu=root=>c.psu.map(l=>l.split('{U}').join(root));
+
+ /* first sign-in, as SYSTEM, through a one-time scheduled task: works for standard accounts and accounts made in OOBE */
+ const B=[];
+ if(S.offline)B.push('# Turn the network adapters back on (they were disabled during setup)','Get-NetAdapter | Enable-NetAdapter -Confirm:$false','');
+ B.push(...c.net);
+ if(c.boot.length)B.push('# Power and other system settings',...c.boot,'');
+ if(S.nvOn&&S.nvPath)B.push('# NVIDIA driver (silent installer copied to this path beforehand)',`$s = '${psq(S.nvPath)}'`,"if (Test-Path $s) { Start-Process $s -ArgumentList '-s','-noreboot' -Wait }",'');
+ if(S.cleanup)B.push(...CLEANUP);
+ const hasBoot=B.length>0;
+ const boot=["$ErrorActionPreference = 'SilentlyContinue'",
+  `# Runs once as SYSTEM at the first sign-in (scheduled task ${TASK}), whatever the account type.`,
+  '# The task can also start for the temporary OOBE account: wait until OOBE is over and a real account is signed in.',
+  'for ($i = 0; $i -lt 360; $i++) {',
+  ' $u = (Get-CimInstance Win32_ComputerSystem).UserName',
+  " if ((Get-ItemProperty -LiteralPath 'HKLM:\\SYSTEM\\Setup').OOBEInProgress -ne 1 -and $u -and $u -notmatch 'defaultuser\\d') { break }",
+  ' Start-Sleep 10',
+  '}',
+  "try { [IO.File]::Open(\"$env:ProgramData\\WinTweaks\\firstboot.lock\", 'CreateNew').Close() } catch { exit }",
+  `Unregister-ScheduledTask -TaskName '${TASK}' -Confirm:$false`,
+  'Start-Transcript -Path "$env:ProgramData\\WinTweaks\\firstboot.log" -Append | Out-Null','',
+  ...B,'Stop-Transcript | Out-Null'];
+
  /* system script (specialize pass, runs as SYSTEM) */
  const s=head('system');
  if(hklm.length){s.push('# Registry (HKLM)');hklm.forEach(r=>s.push(regLine(r,'HKLM')));s.push('')}
- if(def&&(hkcu.length||S.od)){
+ if(def&&perUser){
   s.push('# Default profile: applies to all new users','reg load HKU\\WH_DEF C:\\Users\\Default\\NTUSER.DAT | Out-Null');
   hkcu.forEach(r=>s.push(regLine(r,'HKU\\WH_DEF')));
+  s.push(...psu(DEFROOT));
   if(S.od)s.push('# Prevent OneDrive from reinstalling itself at first logon',ODRUN.replace('HKCU','HKU\\WH_DEF'));
   s.push('[GC]::Collect(); [GC]::WaitForPendingFinalizers(); Start-Sleep 1','reg unload HKU\\WH_DEF | Out-Null','');
  }
+ if(S.pwNever)s.push('# Passwords of local accounts never expire','net accounts /maxpwage:UNLIMITED | Out-Null','');
  if(S.net35)s.push('# .NET Framework 3.5',"foreach ($d in (Get-PSDrive -PSProvider FileSystem)) { $p = Join-Path $d.Root 'sources\\sxs'; if (Test-Path $p) { dism /online /enable-feature /featurename:NetFx3 /All /Source:$p /LimitAccess | Out-Null; break } }",'');
  if(c.ps.length)s.push('# Commands',...c.ps,'');
  if(c.appx.length)s.push('# Remove apps',`$apps = @(${c.appx.map(n=>"'"+psq(n)+"'").join(', ')})`,'foreach ($n in $apps) {','  Get-AppxPackage -AllUsers -Name $n | Remove-AppxPackage -AllUsers','  Get-AppxProvisionedPackage -Online | Where-Object { $_.DisplayName -like $n } | Remove-AppxProvisionedPackage -Online | Out-Null','}','');
+ if(cs)s.push(...custom(cs));
+ if(hasBoot)s.push('# One-time task: runs firstboot.ps1 as SYSTEM at the first sign-in (network, power, drivers)',
+  ...regTask(TASK,taskXml('<LogonTrigger><Enabled>true</Enabled></LogonTrigger>','-NoProfile -ExecutionPolicy Bypass -File "C:\\ProgramData\\WinTweaks\\firstboot.ps1"','PT3H')));
  s.push('Stop-Transcript | Out-Null');
- const hasSys=!!(hklm.length||(def&&(hkcu.length||S.od))||S.net35||c.ps.length||c.appx.length);
- /* first sign-in script (runs as the user) */
+ const hasSys=!!(hklm.length||(def&&perUser)||S.pwNever||S.net35||c.ps.length||c.appx.length||cs||hasBoot);
+
+ /* first sign-in script (runs as the user, elevated for administrators) */
  const L=head('firstlogon');
  const geo=GEOS.find(g=>g[0]&&g[0]===S.homeLoc),region=!!(geo||S.userLoc);
  if(region){
@@ -1374,15 +1678,11 @@ function scripts(c){
   if(S.userLoc)L.push('Set-Culture '+S.userLoc);
   L.push('');
  }
- if(!def&&(hkcu.length||S.od)){
+ if(!def&&perUser){
   L.push('# Registry (HKCU)');hkcu.forEach(r=>L.push(regLine(r,'HKCU')));
+  L.push(...psu('HKCU:'));
   if(S.od)L.push(ODRUN);
   L.push('Stop-Process -Name explorer -Force','');
- }
- if(local&&S.pwNever&&S.accName)L.push(`Set-LocalUser -Name '${psq(S.accName)}' -PasswordNeverExpires $true`,'');
- if(c.logon.length)L.push('# Commands',...c.logon,'');
- if(S.nvOn&&S.nvPath){
-  L.push('# NVIDIA driver (silent installer copied to this path beforehand)',`$s = '${psq(S.nvPath)}'`,"if (Test-Path $s) { Start-Process $s -ArgumentList '-s','-noreboot' -Wait }",'');
  }
  if(ids.length){
   L.push('# winget: wait for network (up to ~3 min) and for winget (up to ~10 min), then install',
@@ -1392,18 +1692,42 @@ function scripts(c){
    'winget source update | Out-Null',
    'foreach ($id in $ids) { winget install --id $id -e --source winget --silent --accept-package-agreements --accept-source-agreements }','');
  }
+ if(run){
+  if(!ids.length)L.push('# Wait for the network (up to ~3 min)','for ($i = 0; $i -lt 90 -and -not (Test-Connection 1.1.1.1 -Count 1 -Quiet); $i++) { Start-Sleep 2 }');
+  L.push('# Run your file from the installation media (every drive is searched)',
+   `$rel = '${psq(run)}'`,
+   '$f = Get-PSDrive -PSProvider FileSystem | ForEach-Object { Join-Path $_.Root $rel } | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1',
+   'if ($f) {',
+   ' Push-Location -LiteralPath (Split-Path -Parent $f)',
+   ' switch -Regex ($f) {',
+   "  '\\.(cmd|bat)$' { Start-Process cmd.exe -ArgumentList '/c', ('\"' + $f + '\"') -Wait }",
+   "  '\\.ps1$' { Start-Process powershell.exe -ArgumentList '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', ('\"' + $f + '\"') -Wait }",
+   "  '\\.msi$' { Start-Process msiexec.exe -ArgumentList '/i', ('\"' + $f + '\"'), '/qb' -Wait }",
+   '  default { Start-Process -FilePath $f -Wait }',
+   ' }',
+   ' Pop-Location',
+   '} else { "File not found on any drive: $rel" }','');
+ }
+ if(cl)L.push(...custom(cl));
  L.push('Stop-Transcript | Out-Null');
- const hasLogon=!!(region||(S.nvOn&&S.nvPath)||(!def&&(hkcu.length||S.od))||(local&&S.pwNever&&S.accName)||c.logon.length||ids.length);
- return {sys:s.join('\n'),logon:L.join('\n'),hasSys,hasLogon};
+ const hasLogon=!!(region||(!def&&perUser)||ids.length||run||cl);
+ return {sys:s.join('\n'),boot:boot.join('\n'),logon:L.join('\n'),hasSys,hasBoot,hasLogon};
 }
 
 function build(){
- const c=collect(),sc=scripts(c),A=S.arch,lang=S.lang,kbd=S.kbd,local=S.accMode==='local',notes=[];
+ const c=collect(),sc=scripts(c),A=S.arch,lang=S.lang,local=S.accMode==='local',notes=[];
  const comp=(name,lines)=>[`<component name="${name}" processorArchitecture="${A}" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS">`,...lines.map(l=>'  '+l),'</component>'];
  const rs=cmds=>['<RunSynchronous>',...cmds.flatMap((p,i)=>['  <RunSynchronousCommand wcm:action="add">',`    <Order>${i+1}</Order>`,`    <Path>${esc(p)}</Path>`,'  </RunSynchronousCommand>']),'</RunSynchronous>'];
  const fl=cmds=>['<FirstLogonCommands>',...cmds.flatMap((p,i)=>['  <SynchronousCommand wcm:action="add">',`    <Order>${i+1}</Order>`,`    <CommandLine>${esc(p)}</CommandLine>`,'    <RequiresUserInput>false</RequiresUserInput>','  </SynchronousCommand>']),'</FirstLogonCommands>'];
  const pass=(n,l)=>l.length?[`<settings pass="${n}">`,...l.map(x=>'  '+x),'</settings>']:[];
- const intl=[`<InputLocale>${esc(kbd)}</InputLocale>`,`<SystemLocale>${lang}</SystemLocale>`,`<UILanguage>${lang}</UILanguage>`,`<UserLocale>${S.userLoc||lang}</UserLocale>`];
+ let kbd=inputLocale();
+ if(!kbdOk()){
+  notes.push(['w','The keyboard code is not valid (format LLLL:KKKKKKKK or a language name): the default keyboard of the Windows language is used.']);
+  kbd=LANG_KBD[lang]||'0409:00000409';
+ }
+ /* the regional format also sets the language for non-Unicode programs */
+ const loc=S.userLoc||lang;
+ const intl=[`<InputLocale>${esc(kbd)}</InputLocale>`,`<SystemLocale>${loc}</SystemLocale>`,`<UILanguage>${lang}</UILanguage>`,`<UserLocale>${loc}</UserLocale>`];
 
  /* windowsPE */
  const pe=comp('Microsoft-Windows-International-Core-WinPE',['<SetupUILanguage>',`  <UILanguage>${lang}</UILanguage>`,'</SetupUILanguage>',...intl]);
@@ -1412,16 +1736,19 @@ function build(){
  const setup=[];
  if(bp.length)setup.push(...rs(bp));
  if(S.wipe){
-  setup.push('<DiskConfiguration>','  <Disk wcm:action="add">','    <DiskID>0</DiskID>','    <WillWipeDisk>true</WillWipeDisk>','    <CreatePartitions>',
-   '      <CreatePartition wcm:action="add"><Order>1</Order><Type>EFI</Type><Size>300</Size></CreatePartition>',
-   '      <CreatePartition wcm:action="add"><Order>2</Order><Type>MSR</Type><Size>16</Size></CreatePartition>',
-   '      <CreatePartition wcm:action="add"><Order>3</Order><Type>Primary</Type><Extend>true</Extend></CreatePartition>','    </CreatePartitions>','    <ModifyPartitions>',
-   '      <ModifyPartition wcm:action="add"><Order>1</Order><PartitionID>1</PartitionID><Label>System</Label><Format>FAT32</Format></ModifyPartition>',
-   '      <ModifyPartition wcm:action="add"><Order>2</Order><PartitionID>2</PartitionID></ModifyPartition>',
-   '      <ModifyPartition wcm:action="add"><Order>3</Order><PartitionID>3</PartitionID><Label>Windows</Label><Letter>C</Letter><Format>NTFS</Format></ModifyPartition>',
+  const raw=String(S.diskId??'0').trim(),disk=/^\d{1,2}$/.test(raw)?String(+raw):'0',mbr=S.diskStyle==='mbr';
+  if(disk!==raw)notes.push(['w','Invalid disk number: disk 0 will be used.']);
+  const P=(o,x)=>`      <CreatePartition wcm:action="add"><Order>${o}</Order>${x}</CreatePartition>`;
+  const M=(o,x)=>`      <ModifyPartition wcm:action="add"><Order>${o}</Order><PartitionID>${o}</PartitionID>${x}</ModifyPartition>`;
+  const parts=mbr?[P(1,'<Type>Primary</Type><Size>500</Size>'),P(2,'<Type>Primary</Type><Extend>true</Extend>')]
+   :[P(1,'<Type>EFI</Type><Size>300</Size>'),P(2,'<Type>MSR</Type><Size>16</Size>'),P(3,'<Type>Primary</Type><Extend>true</Extend>')];
+  const mods=mbr?[M(1,'<Label>System Reserved</Label><Format>NTFS</Format><Active>true</Active>'),M(2,'<Label>Windows</Label><Letter>C</Letter><Format>NTFS</Format>')]
+   :[M(1,'<Label>System</Label><Format>FAT32</Format>'),M(2,''),M(3,'<Label>Windows</Label><Letter>C</Letter><Format>NTFS</Format>')];
+  setup.push('<DiskConfiguration>','  <Disk wcm:action="add">',`    <DiskID>${disk}</DiskID>`,'    <WillWipeDisk>true</WillWipeDisk>','    <CreatePartitions>',...parts,'    </CreatePartitions>','    <ModifyPartitions>',...mods,
    '    </ModifyPartitions>','  </Disk>','</DiskConfiguration>',
-   '<ImageInstall>','  <OSImage>','    <InstallTo>','      <DiskID>0</DiskID>','      <PartitionID>3</PartitionID>','    </InstallTo>','  </OSImage>','</ImageInstall>');
-  notes.push(['w','Disk 0 will be ERASED without confirmation and partitioned as GPT/UEFI.']);
+   '<ImageInstall>','  <OSImage>','    <InstallTo>',`      <DiskID>${disk}</DiskID>`,`      <PartitionID>${mbr?2:3}</PartitionID>`,'    </InstallTo>','  </OSImage>','</ImageInstall>');
+  notes.push(['w','Disk {n} will be ERASED without confirmation and partitioned as {style}.',{n:disk,style:mbr?'MBR (BIOS)':'GPT (UEFI)'}]);
+  if(mbr&&A==='arm64')notes.push(['w','ARM64 PCs start only with UEFI: choose the GPT layout.']);
  }
  const ed=S.edition,key=ed==='ask'?'00000-00000-00000-00000-00000':ed==='custom'?S.customKey:KEYS[ed];
  if(ed==='custom'&&!/^[A-Za-z0-9]{5}(-[A-Za-z0-9]{5}){4}$/.test(key))notes.push(['w','The product key is not in the XXXXX-XXXXX-XXXXX-XXXXX-XXXXX format.']);
@@ -1430,7 +1757,7 @@ function build(){
 
  /* specialize */
  const sp=[],spc=[];
- if(sc.hasSys||sc.hasLogon)spc.push(EXTRACT);
+ if(sc.hasSys||sc.hasBoot||sc.hasLogon)spc.push(EXTRACT);
  if(S.nro)spc.push('reg.exe add "HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\OOBE" /v BypassNRO /t REG_DWORD /d 1 /f');
  if(S.offline)spc.push('powershell -NoProfile -Command "Get-NetAdapter | Disable-NetAdapter -Confirm:$false"');
  if(sc.hasSys)spc.push('powershell -NoProfile -ExecutionPolicy Bypass -File C:\\ProgramData\\WinTweaks\\system.ps1');
@@ -1438,7 +1765,7 @@ function build(){
  const spShell=[];
  if(S.pcMode==='random')spShell.push('<ComputerName>*</ComputerName>');
  else if(S.pcMode==='custom'){
-  if(S.pcName){spShell.push(`<ComputerName>${esc(S.pcName)}</ComputerName>`);if(!/^[A-Za-z0-9-]{1,15}$/.test(S.pcName))notes.push(['w','Invalid computer name: use up to 15 letters, digits or hyphens.'])}
+  if(S.pcName){spShell.push(`<ComputerName>${esc(S.pcName)}</ComputerName>`);if(!/^[A-Za-z0-9-]{1,15}$/.test(S.pcName)||/^\d+$/.test(S.pcName))notes.push(['w','Invalid computer name: use up to 15 letters, digits or hyphens.'])}
   else notes.push(['w','Custom computer name is empty: the automatic name will be used.']);
  }
  if(S.owner)spShell.push(`<RegisteredOwner>${esc(S.owner)}</RegisteredOwner>`);
@@ -1463,23 +1790,25 @@ function build(){
   if(S.autoLogon)sh.push('<AutoLogon>',`  <Username>${esc(S.accName)}</Username>`,'  <Enabled>true</Enabled>','  <LogonCount>1</LogonCount>',...pw.map(l=>'  '+l),'</AutoLogon>');
   if(S.accPass)notes.push(['w','The password is stored in plain text in the XML (and in C:\\Windows\\Panther). Do not share the file or upload it to GitHub.']);
   else notes.push(['i','Account without a password: set one after installation.']);
+  if(S.accGroup==='Users'){
+   notes.push(['w','The account is a standard user, so this PC will have no administrator account. Choose Administrator unless someone else manages the PC.']);
+   if(sc.hasLogon)notes.push(['w','With a standard account, Windows asks for an administrator password before it runs the first sign-in script (region, per-user settings, winget and your commands). Network, power and driver settings do not need it.']);
+  }
  }else notes.push(['i','The user account will be requested during OOBE (region, keyboard and name).']);
- const flc=[];
- if(S.offline)flc.push('powershell -NoProfile -Command "Get-NetAdapter | Enable-NetAdapter -Confirm:$false"');
- if(sc.hasLogon)flc.push('powershell -NoProfile -ExecutionPolicy Bypass -File C:\\ProgramData\\WinTweaks\\firstlogon.ps1');
- if(flc.length)sh.push(...fl(flc));
+ if(sc.hasLogon)sh.push(...fl(['powershell -NoProfile -ExecutionPolicy Bypass -File C:\\ProgramData\\WinTweaks\\firstlogon.ps1']));
  oo.push(...comp('Microsoft-Windows-Shell-Setup',sh));
 
  /* extensions: embedded scripts */
  const files=[];
  if(sc.hasSys)files.push(['system.ps1',sc.sys]);
+ if(sc.hasBoot)files.push(['firstboot.ps1',sc.boot]);
  if(sc.hasLogon)files.push(['firstlogon.ps1',sc.logon]);
- const ext=files.length?['<Extensions xmlns="urn:wintweaks:extensions">',...files.map(([n,t])=>`  <File path="C:\\ProgramData\\WinTweaks\\${n}"><![CDATA[${t}]]></File>`),'</Extensions>']:[];
+ const ext=files.length?['<Extensions xmlns="urn:wintweaks:extensions">',...files.map(([n,t])=>`  <File path="C:\\ProgramData\\WinTweaks\\${n}">${cdata(t)}</File>`),'</Extensions>']:[];
 
- /* network notes */
+ /* other notes */
  if(S.wifiOn){
   if(!S.wifiSsid)notes.push(['w','Wi-Fi is enabled but the network name is empty: the Wi-Fi profile will not be created.']);
-  else if(S.wifiSsid.length>32)notes.push(['w','The Wi-Fi network name can have at most 32 characters.']);
+  else if(utf8(S.wifiSsid).length>32)notes.push(['w','The Wi-Fi network name can have at most 32 characters.']);
   else if(!wifiKeyOk())notes.push(['w','The Wi-Fi password must have 8 to 63 characters: the Wi-Fi profile will not be created.']);
   else if(S.wifiAuth!=='open')notes.push(['w','The Wi-Fi password is stored in plain text in the XML. Do not share the file or upload it to GitHub.']);
  }
@@ -1490,17 +1819,22 @@ function build(){
  if(S.dnsMode==='custom'&&!dnsOk())notes.push(['w','Invalid custom DNS servers: they will not be applied.']);
  if(String(S.xreg||'').split('\n').some(l=>l.trim()&&!XREG.test(l.trim())))notes.push(['w','Some lines in "Extra registry settings" are not in the HIVE\\Path|Name|TYPE|Data format and will be ignored.']);
  if(S.rdp&&S.sv_rdp)notes.push(['w','Remote Desktop is enabled in the Network tab but its service is set to be disabled in Windows services: it will not work.']);
- if(local&&S.accGroup==='Users'&&(wifiReady()||staticOk()||dnsOk()||S.noIpv6||S.netPriv))notes.push(['w','Network settings are applied at first sign-in and need an administrator account.']);
+ if(S.netPriv&&(S.sv_share||S.sv_disco))notes.push(['w','The network is set to Private, but file sharing or network discovery is disabled in Windows services: the PC will not be visible on the network.']);
+ if(S.vbs)notes.push(['w','Memory Integrity and virtualization-based security will be turned off: Windows loses a protection against kernel malware.']);
+ if(S.smart)notes.push(['w','SmartScreen will be turned off: downloaded programs are no longer checked.']);
+ if(S.uac==='never')notes.push(['w','UAC is set to "Never notify": programs started by an administrator get full rights without asking.']);
  if(curLevel()==='ult')notes.push(['w','ULTIMATE removes apps and services that some features rely on (Xbox, Camera, Media Player…). Test in a virtual machine first.']);
  if(svcMode()==='game')notes.push(['w','Gaming service mode disables printing, Xbox, Remote Desktop, file sharing and more. Test in a virtual machine first.']);
  if(S.wuMode==='off')notes.push(['w','Automatic updates will be disabled: the PC will stop receiving security fixes until you re-enable them.']);
+ if(String(S.runFile||'').trim())notes.push(['i','Keep the USB drive connected until the desktop appears: your file is searched on every drive at the first sign-in.']);
+ if(String(S.cmdSys||'').trim()||String(S.cmdLogon||'').trim())notes.push(['i','Your own PowerShell commands are included as they are: check them in the script preview below.']);
  if(c.reg.some(r=>r.h==='HKLM'&&r.p.startsWith('SOFTWARE\\Policies')))notes.push(['i','Some settings are applied through policy; Windows may show "Some settings are managed by your organization".']);
  if(S.nro)notes.push(['i','On recent Windows 11 builds BypassNRO may be ignored; creating the local account here avoids the problem.']);
  if(!sc.hasSys&&!sc.hasLogon)notes.push(['i','No tweaks selected: the XML only handles installation and OOBE.']);
 
  const xml=['<?xml version="1.0" encoding="utf-8"?>','<unattend xmlns="urn:schemas-microsoft-com:unattend" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">',
   ...[...pass('windowsPE',pe),...pass('specialize',sp),...pass('oobeSystem',oo),...ext].map(l=>'  '+l),'</unattend>',''].join('\n');
- return {xml,notes,sys:sc.sys,logon:sc.logon,hasSys:sc.hasSys,hasLogon:sc.hasLogon};
+ return {xml,notes,sys:sc.sys,boot:sc.boot,logon:sc.logon,hasSys:sc.hasSys,hasBoot:sc.hasBoot,hasLogon:sc.hasLogon};
 }
 /* ---------- Generate tab ---------- */
 function download(name,text,type){
@@ -1532,7 +1866,8 @@ function isoGuide(){
   el('h3',{text:T('What goes where')}),
   el('ul',{class:'plain'},
    el('li',{},el('code',{text:'autounattend.xml'}),' → '+T('the ISO root, next to setup.exe (always)')),
-   el('li',{},el('code',{text:'sources\\$OEM$\\$1\\Drivers\\NVIDIA'}),' → '+T('only for the NVIDIA driver option; Windows Setup copies it to C:\\Drivers\\NVIDIA'))),
+   el('li',{},el('code',{text:'sources\\$OEM$\\$1\\Drivers\\NVIDIA'}),' → '+T('only for the NVIDIA driver option; Windows Setup copies it to C:\\Drivers\\NVIDIA')),
+   String(S.runFile||'').trim()?el('li',{},el('code',{text:String(S.runFile).trim().replace(/^[\\/]+/,'')}),' → '+T('your own file (Software tab), at this path from the root of the USB drive or ISO')):null),
 
   el('h3',{text:T('Method 1: oscdimg (recommended)')}),
   el('ol',{},
@@ -1561,7 +1896,7 @@ function isoGuide(){
    el('li',{},T('Test it in a virtual machine first (Hyper-V, VirtualBox or VMware) and check that Setup does not ask the questions you automated. Test a UEFI and a BIOS machine if you will use both.')),
    el('li',{},T('Mount the new ISO and confirm that autounattend.xml is in the root.')),
    el('li',{},T('To put it on a USB drive, write it with Rufus (GPT for UEFI PCs, MBR for BIOS PCs) or copy it to a Ventoy drive.'))),
-  el('p',{class:'warnbox',text:T('Warning: with the automatic disk partitioning option, an unattended install erases disk 0 without asking as soon as the PC boots from this media. Label the ISO and the USB drive clearly and do not leave them connected when you restart a PC you want to keep.')}),
+  el('p',{class:'warnbox',text:T('Warning: with the automatic disk partitioning option, an unattended install erases the selected disk without asking as soon as the PC boots from this media. Label the ISO and the USB drive clearly and do not leave them connected when you restart a PC you want to keep.')}),
 
   el('details',{},el('summary',{text:T('Common problems')}),
    el('ul',{class:'plain'},
@@ -1581,17 +1916,49 @@ function renderGen(p){
  const nn=IMP&&IMP.unsup.length?r.notes.concat([['w','The imported file has settings that this page does not support; they are not in this XML (see the import report at the top of the page).']]):r.notes;
  const copy=el('button',{},tr('Copy XML'));
  copy.onclick=()=>copyText(r.xml,copy);
+ const link=el('button',{title:tr('Passwords, the Wi-Fi password and product keys are left out of the link.')},tr('Copy link to this configuration'));
+ link.onclick=()=>shareLink(link);
+ const sum=detectedOptions();
  p.append(el('section',{class:'card'},
   el('h2',{text:'autounattend.xml'}),
   el('p',{class:'status '+(bad?'bad':'ok'),text:bad?tr('Invalid XML: ')+bad.textContent.slice(0,200):tr('Well-formed XML')}),
-  el('div',{class:'acts'},el('button',{class:'pri',onclick:()=>download('autounattend.xml',r.xml,'application/xml')},tr('Download autounattend.xml')),copy),
+  el('div',{class:'acts'},el('button',{class:'pri',onclick:()=>download('autounattend.xml',r.xml,'application/xml')},tr('Download autounattend.xml')),copy,link),
   el('p',{class:'hint',text:tr('Place the file in the root of the Windows installation USB drive (next to setup.exe), or add it to the ISO and save a new bootable ISO (step-by-step guide below).')}),
-  nn.length?el('ul',{class:'notes'},nn.map(([k,t])=>el('li',{class:k==='w'?'w':''},(k==='w'?tr('Warning: '):'')+tr(t)))):null),
+  nn.length?el('ul',{class:'notes'},nn.map(([k,t,v])=>el('li',{class:k==='w'?'w':''},(k==='w'?tr('Warning: '):'')+fmt(tr(t),v)))):null,
+  sum.length?el('details',{class:'sum'},el('summary',{text:tr('Summary of your choices')+' ('+sum.reduce((a,g)=>a+g.items.length,0)+')'}),
+   sum.map(g=>el('p',{class:'hint'},el('b',{text:tr(g.tab)+': '}),g.items.map(i=>impValue(byId(i.id),i.v)).join(' · ')))):null),
   isoGuide(),
   el('section',{class:'card'},el('h2',{text:tr('Preview')}),el('pre',{text:r.xml}),
+   el('p',{class:'hint',text:tr('The scripts below are embedded in the XML and written to C:\\ProgramData\\WinTweaks during setup, together with their logs.')}),
    r.hasSys?el('details',{},el('summary',{text:tr('system.ps1 (specialize pass, runs as SYSTEM)')}),el('pre',{text:r.sys})):null,
-   r.hasLogon?el('details',{},el('summary',{text:tr('firstlogon.ps1 (first sign-in)')}),el('pre',{text:r.logon})):null));
+   r.hasBoot?el('details',{},el('summary',{text:tr('firstboot.ps1 (first sign-in, runs as SYSTEM: network, power, drivers)')}),el('pre',{text:r.boot})):null,
+   r.hasLogon?el('details',{},el('summary',{text:tr('firstlogon.ps1 (first sign-in, runs as the user)')}),el('pre',{text:r.logon})):null));
 }
+/* ---------- link to a configuration (#cfg=...) ---------- */
+const SECRET=['accPass','wifiPass','customKey'];
+const b64u=u=>{let s='';for(let i=0;i<u.length;i+=0x8000)s+=String.fromCharCode.apply(null,u.subarray(i,i+0x8000));return btoa(s).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')};
+const unb64u=s=>Uint8Array.from(atob(s.replace(/-/g,'+').replace(/_/g,'/')),c=>c.charCodeAt(0));
+async function shareLink(btn){
+ const o={};
+ for(const x of allOpts())if(x.type!=='button'&&!SECRET.includes(x.id)&&S[x.id]!==x.def)o[x.id]=S[x.id];
+ const json=JSON.stringify(o);
+ let data;
+ try{data='z'+b64u(new Uint8Array(await new Response(new Blob([json]).stream().pipeThrough(new CompressionStream('deflate-raw'))).arrayBuffer()))}
+ catch(e){data='j'+b64u(new TextEncoder().encode(json))}
+ copyText(location.href.split('#')[0]+'#cfg='+data,btn);
+}
+async function loadFromHash(){
+ const m=/^#cfg=([zj])([\w-]*)$/.exec(location.hash);
+ if(!m)return false;
+ const bytes=unb64u(m[2]);
+ const json=m[1]==='z'?await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).text():new TextDecoder().decode(bytes);
+ const j=JSON.parse(json);
+ defaults();merge(j);save();
+ try{history.replaceState(null,'',location.pathname+location.search)}catch(e){}
+ NOTICE='Configuration loaded from the link. Passwords and product keys are never included in links.';
+ return true;
+}
+let NOTICE='';
 
 /* ---------- import an existing autounattend.xml ----------
    1. mapAnswerFile() reads the XML and the embedded scripts and sets the matching options.
@@ -1604,7 +1971,29 @@ const xk=(e,n)=>xkids(e,n)[0]||null;
 const xt=(e,n)=>{const k=xk(e,n);return k?k.textContent.trim():null};
 const unq=v=>v.replace(/''/g,"'");
 const psList=v=>{const o=[],re=/'((?:[^']|'')*)'/g;let m;while((m=re.exec(v)))o.push(unq(m[1]));return o};
-const REGRE=/^reg add "(HKLM|HKU\\WH_DEF|HKCU)\\(.+?)" (?:\/ve|\/v "(.*?)") \/t (REG_\w+) \/d (?:"(.*)"|(\S+)) \/f \| Out-Null$/;
+/* reads a "reg add ... /f | Out-Null" line written by this page: old files quote with "...", new ones with PowerShell '...' */
+function parseRegAdd(ln){
+ const m=/^reg(?:\.exe)? add (.*) \/f \| Out-Null$/.exec(ln);
+ if(!m)return null;
+ const toks=[],re=/'((?:[^']|'')*)'|"([^"]*)"|(\S+)/g;let t;
+ while((t=re.exec(m[1])))toks.push(t[1]!==undefined?{v:unq(t[1]),q:1}:t[2]!==undefined?{v:t[2],q:1}:{v:t[3],q:0});
+ /* an argument with spaces that ends in "\\" was written with one extra "\\" (see regArg) */
+ const val=x=>x.q&&/\s/.test(x.v)&&/\\\\$/.test(x.v)?x.v.slice(0,-1):x.v;
+ const key=toks.shift();if(!key)return null;
+ const km=/^(HKLM|HKU\\WH_DEF|HKCU)\\(.+)$/.exec(val(key));if(!km)return null;
+ let n=null,type=null,d='',hasD=false;
+ for(let i=0;i<toks.length;i++){
+  const a=toks[i].v.toLowerCase();
+  if(a==='/ve'&&!toks[i].q)n=null;
+  else if(a==='/v'&&!toks[i].q)n=val(toks[++i]||{v:''});
+  else if(a==='/t'&&!toks[i].q)type=(toks[++i]||{v:''}).v.toUpperCase();
+  else if(a==='/d'&&!toks[i].q){d=val(toks[++i]||{v:''});hasD=true}
+  else return null;
+ }
+ if(!type||!/^REG_\w+$/.test(type))return null;
+ if(!hasD&&!/^REG_(SZ|EXPAND_SZ|MULTI_SZ)$/.test(type))return null;
+ return {root:km[1],p:km[2],n,t:type,d};
+}
 const LABKEYS={BypassTPMCheck:'bpTpm',BypassSecureBootCheck:'bpSb',BypassRAMCheck:'bpRam',BypassCPUCheck:'bpCpu',BypassStorageCheck:'bpSto',BypassDiskCheck:'bpDsk'};
 function parseAnswerFile(text){
  const doc=new DOMParser().parseFromString(text.replace(/^﻿/,''),'application/xml');
@@ -1619,9 +2008,9 @@ const SETRE=/^Set-RegistryValue -Path '((?:[^']|'')*)' -Name '((?:[^']|'')*)' -T
 const regSigOf=(h,p,n,t,d)=>(h==='HKLM'?'HKLM':'HKCU')+'|'+p+'|'+(n||'')+'|'+t+'|'+d;
 /* returns the signature of a registry line (reg add or Set-RegistryValue) or null */
 function regLineSig(ln){
- let m=REGRE.exec(ln);
- if(m)return regSigOf(m[1],m[2],m[3]??'',m[4],m[5]!==undefined?m[5]:m[6]);
- m=SETRE.exec(ln);
+ const r=parseRegAdd(ln);
+ if(r)return regSigOf(r.root,r.p,r.n??'',r.t,r.d);
+ const m=SETRE.exec(ln);
  if(!m||!REGTYPES[m[3]])return null;
  let path=unq(m[1]),hive;
  const hm=/^(HKLM|HKCU|HKCR):\\(.*)$/.exec(path);
@@ -1634,16 +2023,21 @@ function regLineSig(ln){
 }
 /* commands that this page writes in its own way: compared by what they do, not by their text */
 function canonCmd(t){
- if(/ExtractScript|Winhancements\.ps1|WinTweaks\\(system|firstlogon)\.ps1/.test(t))return null;
+ if(/ExtractScript|Winhancements\.ps1|WinTweaks\\(system|firstboot|firstlogon)\.ps1/.test(t))return null;
  if(/NetFx3/.test(t))return null;
  if(/BypassNRO/.test(t))return 'BypassNRO'+(/\/d\s+1\b/.test(t)?'=1':'?');
  if(/Disable-NetAdapter/.test(t))return 'Disable-NetAdapter';
- if(/Enable-NetAdapter/.test(t))return 'Enable-NetAdapter';
+ /* older files turned the network back on with a FirstLogonCommand; firstboot.ps1 does it now */
+ if(/Enable-NetAdapter/.test(t))return null;
  const m=/LabConfig"?\s+\/v\s+(\w+)\s+\/t\s+REG_DWORD\s+\/d\s+(\d+)/i.exec(t);
  if(m)return 'LabConfig:'+m[1]+'='+m[2];
  return t.replace(/\s+/g,' ').trim();
 }
-const OWN_FILES=['system.ps1','firstlogon.ps1'];
+const OWN_FILES=['system.ps1','firstboot.ps1','firstlogon.ps1'];
+/* lines of older versions of this page that are now written differently (the option is still read from them) */
+const LEGACY_LINE=/^Set-LocalUser -Name '.*' -PasswordNeverExpires \$true$|^foreach \(\$n in 'DoSvc'\) \{/;
+/* lines every script of this page starts and ends with */
+const BOILER=/^(\$ErrorActionPreference = 'SilentlyContinue'|Start-Transcript -Path .*|Stop-Transcript \| Out-Null)$/;
 /* flat list of everything the file says: XML leaves (path + text) and script lines.
    Components of other architectures are copies of the same settings and are skipped. */
 function flatAnswer(doc,arch){
@@ -1662,7 +2056,14 @@ function flatAnswer(doc,arch){
    const base=(e.getAttribute('path')||'').split('\\').pop()||'?';
    const lines=e.textContent.replace(/\r/g,'').split('\n').map(x=>x.trim());
    if(OWN_FILES.includes(base)){
-    for(const t of lines)if(t&&!t.startsWith('#')){const g=regLineSig(t);out.push(g?{kind:'reg',sig:g}:{kind:'script',file:base,text:t})}
+    /* here-strings (Wi-Fi profile, scheduled tasks) are read by mapAnswerFile, not compared line by line */
+    let here=false;
+    for(const t of lines){
+     if(here){if(t.startsWith("'@"))here=false;continue}
+     if(/@'$/.test(t))here=true;
+     if(!t||t.startsWith('#')||LEGACY_LINE.test(t)||BOILER.test(t))continue;
+     const g=regLineSig(t);out.push(g?{kind:'reg',sig:g}:{kind:'script',file:base,text:t});
+    }
    }else{
     /* a script from another tool (e.g. Winhancements.ps1): registry settings are compared one by one,
        the rest is summarised because it cannot be converted to options */
@@ -1677,8 +2078,12 @@ function flatAnswer(doc,arch){
   }
   const kids=[...e.children].filter(c=>c.namespaceURI!==CPI);
   if(!kids.length){
-   if(n==='Order'||n==='settings')return;
+   if(n==='Order'||n==='settings'||n==='RequiresUserInput')return;
    if(n==='NetworkLocation')return;
+   /* SystemLocale follows the regional format (older files used the Windows language) */
+   if(n==='SystemLocale')return;
+   /* language and keyboard codes are not case-sensitive (0C0A:0000040A = 0c0a:0000040a) */
+   if(['InputLocale','UILanguage','UserLocale'].includes(n)){out.push({kind:'xml',path:p,text:e.textContent.trim().toLowerCase()});return}
    if(n==='Path'||n==='CommandLine'){const c=canonCmd(e.textContent.trim());if(c===null)return;out.push({kind:'xml',path:p,text:c});return}
    /* the same Shell-Setup values work in specialize or oobeSystem: compare them as one */
    if(['TimeZone','ComputerName','RegisteredOwner','RegisteredOrganization'].includes(n))p=p.replace('settings[oobeSystem]','settings[specialize]');
@@ -1689,7 +2094,7 @@ function flatAnswer(doc,arch){
  walk(doc.documentElement,'');
  return out;
 }
-const flatKey=e=>e.kind==='reg'?'reg\0'+e.sig:(e.kind==='script'?'script:'+e.file:e.path)+'\0'+e.text;
+const flatKey=e=>e.kind==='reg'?'reg\0'+e.sig:(e.kind==='script'?'script:'+(OWN_FILES.includes(e.file)?'own':e.file):e.path)+'\0'+e.text;
 function mapAnswerFile(doc){
  const N={},notes=[];let redacted=false;
  for(const o of allOpts()){
@@ -1714,12 +2119,17 @@ function mapAnswerFile(doc){
  if(arch)N.arch=arch;
  /* language and keyboard */
  const intl=G('oobeSystem','Microsoft-Windows-International-Core'),intlPE=G('windowsPE','Microsoft-Windows-International-Core-WinPE');
+ const findCI=(list,v)=>{const x=list.find(l=>l[0].toLowerCase()===String(v).toLowerCase());return x?x[0]:null};
  const lg=xt(intl,'UILanguage')||xt(intlPE,'UILanguage')||xt(xk(intlPE,'SetupUILanguage'),'UILanguage');
- if(lg&&LANGS.some(l=>l[0]===lg))N.lang=lg;
+ if(lg&&findCI(LANGS,lg))N.lang=findCI(LANGS,lg);
  const ul=xt(intl,'UserLocale')||xt(intlPE,'UserLocale');
- if(ul&&ul!==N.lang&&LANGS.some(l=>l[0]===ul))N.userLoc=ul;
+ if(ul&&findCI(LOCALES,ul)&&findCI(LOCALES,ul)!==N.lang)N.userLoc=findCI(LOCALES,ul);
  const kb=xt(intl,'InputLocale')||xt(intlPE,'InputLocale');
- if(kb&&KBDS.some(k=>k[0]===kb))N.kbd=kb;
+ if(kb){
+  const parts=kb.split(';').map(x=>x.trim()).filter(Boolean),k1=parts[0]&&findCI(KBDS,parts[0]),k2=parts[1]&&findCI(KBDS,parts[1]);
+  if(k1&&(parts.length===1||(parts.length===2&&k2))){N.kbd=k1;N.kbd2=k2||''}
+  else{N.kbd='custom';N.kbdCustom=kb;N.kbd2=''}
+ }
  /* windowsPE: setup */
  const setup=G('windowsPE','Microsoft-Windows-Setup'),ud=xk(setup,'UserData');
  const key=xt(xk(ud,'ProductKey'),'Key');
@@ -1728,7 +2138,11 @@ function mapAnswerFile(doc){
  if(xt(ud,'AcceptEula')==='true')N.hideEula=true;
  for(const p of cmds(setup)){const m=/LabConfig"?\s+\/v\s+(\w+)\s+\/t\s+REG_DWORD\s+\/d\s+1\b/i.exec(p);if(m&&LABKEYS[m[1]])N[LABKEYS[m[1]]]=true}
  const disk=xk(xk(setup,'DiskConfiguration'),'Disk');
- if(disk&&xt(disk,'DiskID')==='0'&&xt(disk,'WillWipeDisk')==='true')N.wipe=true;
+ if(disk&&xt(disk,'WillWipeDisk')==='true'){
+  N.wipe=true;N.diskId=xt(disk,'DiskID')||'0';
+  const types=xkids(xk(disk,'CreatePartitions'),'CreatePartition').map(c=>xt(c,'Type'));
+  N.diskStyle=types.includes('EFI')||types.includes('MSR')?'gpt':'mbr';
+ }
  /* specialize */
  for(const p of cmds(G('specialize','Microsoft-Windows-Deployment'))){
   if(/BypassNRO/.test(p)&&/\/d\s+1\b/.test(p))N.nro=true;
@@ -1765,15 +2179,17 @@ function mapAnswerFile(doc){
  /* embedded scripts */
  const files={};
  for(const f of xkids(xk(doc.documentElement,'Extensions'),'File'))files[(f.getAttribute('path')||'').split('\\').pop()]=f.textContent.replace(/\r/g,'');
- const sysT=files['system.ps1']||'',logT=files['firstlogon.ps1']||'';
+ /* firstboot.ps1 (SYSTEM) and firstlogon.ps1 (user) are read together: older files had everything in firstlogon.ps1 */
+ const sysT=files['system.ps1']||'',bootT=files['firstboot.ps1']||'',userT=files['firstlogon.ps1']||'',logT=userT+'\n'+bootT;
+ const CUSTOM=/^# >>> your commands\n([\s\S]*?)\n# <<< your commands$/m;
  const lines=t=>new Set(t.split('\n').map(x=>x.replace(/\s+$/,'')));
  const sysL=lines(sysT),logL=lines(logT);
  const regSet=new Set();let hasDef=false,hasUser=false;
- for(const [fn,t] of Object.entries(files))for(const raw of t.split('\n')){
+ for(const [fn,t] of Object.entries(files))for(const raw of t.replace(CUSTOM,'').split('\n')){
   const ln=raw.trim(),sg=regLineSig(ln);if(!sg)continue;
   regSet.add(sg);
   if(!OWN_FILES.includes(fn)){if(sg.startsWith('HKCU|'))hasDef=true}
-  else if(/^reg add "HKU\\WH_DEF/.test(ln))hasDef=true;
+  else if(/^reg add ["']HKU\\WH_DEF/.test(ln))hasDef=true;
   else if(sg.startsWith('HKCU|')&&fn==='firstlogon.ps1')hasUser=true;
  }
  if(sysT.includes('reg load HKU\\WH_DEF'))hasDef=true;
@@ -1781,15 +2197,23 @@ function mapAnswerFile(doc){
  N.scope=!hasDef&&hasUser?'first':'default';
  const am=/^\$apps = @\((.*)\)$/m.exec(sysT),appx=new Set(am?psList(am[1]):[]);
  const sig=it=>it.h+'|'+it.p+'|'+(it.n===null?'':it.n)+'|'+it.t+'|'+String(it.d);
- const have=it=>it.k==='reg'?regSet.has(sig(it)):it.k==='appx'?appx.has(it.n):(it.w==='sys'?sysL:logL).has(it.l)||(it.l.includes('\n')&&(it.w==='sys'?sysT:logT).includes(it.l));
+ const have=it=>it.k==='reg'?regSet.has(sig(it)):it.k==='appx'?appx.has(it.n)
+  :it.k==='psu'?sysL.has(it.l.split('{U}').join(DEFROOT))||logL.has(it.l.split('{U}').join('HKCU:'))
+  :(it.w==='sys'?sysL:logL).has(it.l)||(it.l.includes('\n')&&(it.w==='sys'?sysT:logT).includes(it.l));
  const all=items=>items.length>0&&items.every(have);
  for(const o of allOpts()){
   if(!o.fx)continue;
-  if(o.type==='toggle')N[o.id]=all(o.fx(true)||[]);
+  /* legacy: what older versions of this page wrote for the same option */
+  if(o.type==='toggle')N[o.id]=all(o.fx(true)||[])||!!(o.legacy&&all(o.legacy()));
   else if(o.type==='select'){let best='',bn=0;for(const [v] of o.opts){if(!v)continue;const it=o.fx(v)||[];if(all(it)&&it.length>bn){best=v;bn=it.length}}N[o.id]=best}
  }
  if(/\/featurename:NetFx3/i.test(sysT))N.net35=true;
- if(/^Set-LocalUser -Name '.*' -PasswordNeverExpires \$true$/m.test(logT))N.pwNever=true;
+ if(/^net accounts \/maxpwage:UNLIMITED/m.test(sysT)||/^Set-LocalUser -Name '.*' -PasswordNeverExpires \$true$/m.test(logT))N.pwNever=true;
+ {const rf=/^\$rel = '((?:[^']|'')*)'$/m.exec(userT);if(rf)N.runFile=unq(rf[1])}
+ {const a=CUSTOM.exec(sysT),b=CUSTOM.exec(userT);N.cmdSys=a?a[1]:'';N.cmdLogon=b?b[1]:''}
+ N.cleanup=bootT.includes("Register-ScheduledTask -TaskName 'WinTweaks-Cleanup'");
+ /* older versions disabled the DoSvc service; the Delivery Optimization policy replaces it */
+ if(/^foreach \(\$n in 'DoSvc'\)/m.test(sysT))N.doff=true;
  const wg=/^\$ids = @\((.*)\)$/m.exec(logT);if(wg)N.wg=psList(wg[1]).join('\n');
  /* network (see netFx) */
  const wm=/\$wx = @'\n([\s\S]*?)\n'@/.exec(logT);
@@ -1819,7 +2243,7 @@ function mapAnswerFile(doc){
  N.netPriv=logT.includes('Set-NetConnectionProfile -NetworkCategory Private');
  N.rdp=regSet.has('HKLM|SYSTEM\\CurrentControlSet\\Control\\Terminal Server|fDenyTSConnections|REG_DWORD|0')&&sysL.has("Enable-NetFirewallRule -Group '@FirewallAPI.dll,-28752'");
  {
-  const cm=/^Set-Culture ([\w-]+)$/m.exec(logT);if(cm&&LANGS.some(l=>l[0]===cm[1]))N.userLoc=cm[1];
+  const cm=/^Set-Culture ([\w-]+)$/m.exec(logT);if(cm&&findCI(LOCALES,cm[1])&&findCI(LOCALES,cm[1])!==N.lang)N.userLoc=findCI(LOCALES,cm[1]);
   const gm=/^Set-WinHomeLocation -GeoId (\d+)$/m.exec(logT);if(gm&&GEOS.some(g=>g[0]===gm[1]))N.homeLoc=gm[1];
   const nm=/^\$s = '((?:[^']|'')*)'\r?\nif \(Test-Path \$s\) \{ Start-Process \$s -ArgumentList '-s','-noreboot' -Wait \}$/m.exec(logT);
   if(nm){N.nvOn=true;N.nvPath=unq(nm[1])}
@@ -1879,13 +2303,14 @@ function unsLabel(e){
 function impValue(o,v){
  if(o.type==='toggle')return tr(o.label);
  let s=String(v);
- if(o.type==='select'){const f=o.opts.find(x=>x[0]===v);s=f?(o.raw?f[1]:tr(f[1])):s}
+ if(o.type==='select'){const f=selOpts(o).find(x=>x[0]===v);s=f?f[1]:s}
  if(o.type==='password')s='••••••';
  else if(o.type==='textarea')s=s.split('\n').length+' '+tr('lines');
  return tr(o.label)+': '+clip(s,70);
 }
 function renderImport(){
  const box=$('#impbox');box.innerHTML='';
+ if(NOTICE)box.append(el('section',{class:'card imp'},el('h2',{},el('span',{text:'🔗 '+tr(NOTICE)}),el('button',{onclick:()=>{NOTICE='';renderImport()}},tr('Dismiss')))));
  if(!IMP)return;
  const n=IMP.set.reduce((a,g)=>a+g.items.length,0),bad=IMP.unsup.length>0;
  const sec=el('section',{class:'card imp'+(bad?' bad':'')},
@@ -1925,6 +2350,8 @@ function applyChrome(){
  for(const[id,v]of CHROME_TXT)$('#'+id).textContent=tr(v);
  for(const[id,v]of CHROME_TTL)$('#'+id).setAttribute('title',tr(v));
  document.title=tr(TITLE_BASE);
+ $('#q').placeholder=tr('Search options…')+'  ( / )';$('#q').setAttribute('aria-label',tr('Search options'));
+ $('#tabs').setAttribute('aria-label',tr('Sections'));
  document.documentElement.lang=UILANGS.find(l=>l.code===LANG).html;
  $('#lang').value=LANG;
 }
@@ -1968,8 +2395,20 @@ $('#b-th').onclick=()=>{
 };
 try{const th=localStorage.getItem('wh-theme');if(th&&th!=='auto')document.documentElement.dataset.theme=th}catch(e){}
 
+/* ---------- search box ---------- */
+$('#q').addEventListener('input',e=>{Q=e.target.value;refresh(true)});
+$('#q').addEventListener('keydown',e=>{if(e.key==='Escape'&&Q){e.preventDefault();setQuery('')}});
+document.addEventListener('keydown',e=>{
+ const a=document.activeElement,typing=a&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName);
+ if(e.key==='/'&&!typing&&!e.ctrlKey&&!e.metaKey&&!e.altKey){e.preventDefault();$('#q').focus()}
+});
+
 /* ---------- startup ---------- */
 defaults();load();applyChrome();refresh(true);
+/* a configuration link (#cfg=...) replaces the saved options */
+const fromHash=()=>loadFromHash().then(ok=>{if(ok)refresh(true)}).catch(err=>{try{history.replaceState(null,'',location.pathname+location.search)}catch(e){}alert(tr('The configuration link is damaged: ')+err.message)});
+fromHash();
+window.addEventListener('hashchange',fromHash);
 </script>
 </body>
 </html>
