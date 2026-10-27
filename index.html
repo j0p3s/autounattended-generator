@@ -357,7 +357,13 @@ const tpw={id:'energia',title:'Power',groups:[
   SEL('monAc','Turn off screen (plugged in)',null,MIN,'',v=>[PL('powercfg /change monitor-timeout-ac '+v)]),
   SEL('monDc','Turn off screen (battery)',null,MIN,'',v=>[PL('powercfg /change monitor-timeout-dc '+v)]),
   SEL('stdAc','Sleep (plugged in)',null,MIN,'',v=>[PL('powercfg /change standby-timeout-ac '+v)]),
-  SEL('stdDc','Sleep (battery)',null,MIN,'',v=>[PL('powercfg /change standby-timeout-dc '+v)])]}
+  SEL('stdDc','Sleep (battery)',null,MIN,'',v=>[PL('powercfg /change standby-timeout-dc '+v)])]},
+ {title:'Startup',opts:[
+  /* bootmenupolicy Legacy brings back the F8 menu; an "advancedoptions" value in {globalsettings} would block it, so it is removed.
+     The identifiers are quoted because PowerShell reads {current} as a script block. */
+  T('f8','Enable the F8 menu at startup (Advanced Boot Options, Safe Mode)','As in Windows 7: tap F8 right after the PC maker\'s logo to open Safe Mode, Safe Mode with Networking, Disable driver signature enforcement and more. Works on Windows 10 and 11 (bcdedit bootmenupolicy Legacy).',()=>[
+   PS("bcdedit /deletevalue '{globalsettings}' advancedoptions 2>&1 | Out-Null"),
+   PS("bcdedit /set '{current}' bootmenupolicy Legacy | Out-Null; if ($LASTEXITCODE -ne 0) { bcdedit /set '{default}' bootmenupolicy Legacy | Out-Null }")])]}
 ]};
 
 /* ---------- Updates ---------- */
@@ -1266,6 +1272,10 @@ Object.assign(PT,{
  "SmartScreen will be turned off: downloaded programs are no longer checked.":"O SmartScreen será desligado: os programas transferidos deixam de ser verificados.",
  "UAC is set to \"Never notify\": programs started by an administrator get full rights without asking.":"O UAC fica em «Nunca notificar»: os programas iniciados por um administrador recebem todos os direitos sem perguntar.",
  "Keep the USB drive connected until the desktop appears: your file is searched on every drive at the first sign-in.":"Mantenha o pendrive ligado até aparecer o ambiente de trabalho: o seu ficheiro é procurado em todas as unidades no primeiro início de sessão.",
+ "Startup":"Arranque",
+ "Enable the F8 menu at startup (Advanced Boot Options, Safe Mode)":"Ativar o menu F8 no arranque (Opções de Arranque Avançadas, Modo de Segurança)",
+ "As in Windows 7: tap F8 right after the PC maker's logo to open Safe Mode, Safe Mode with Networking, Disable driver signature enforcement and more. Works on Windows 10 and 11 (bcdedit bootmenupolicy Legacy).":"Como no Windows 7: carregue várias vezes em F8 logo a seguir ao logótipo do fabricante para abrir o Modo de Segurança, o Modo de Segurança com Rede, Desativar a imposição da assinatura de controladores e mais. Funciona no Windows 10 e 11 (bcdedit bootmenupolicy Legacy).",
+ "With fast startup on, switching the PC off and on resumes Windows instead of starting it, so the F8 menu may not appear; it always works after Restart. Turn off fast startup in the Power tab to have it at every power-on.":"Com o arranque rápido ativo, desligar e ligar o PC retoma o Windows em vez de o iniciar, por isso o menu F8 pode não aparecer; depois de Reiniciar funciona sempre. Desative o arranque rápido no separador Energia para o ter sempre que ligar o PC.",
  "Your own PowerShell commands are included as they are: check them in the script preview below.":"Os seus comandos PowerShell são incluídos tal como estão: confirme-os na pré-visualização dos scripts abaixo."
 });
 DICTS.pt=PT;
@@ -1822,6 +1832,7 @@ function build(){
  if(S.netPriv&&(S.sv_share||S.sv_disco))notes.push(['w','The network is set to Private, but file sharing or network discovery is disabled in Windows services: the PC will not be visible on the network.']);
  if(S.vbs)notes.push(['w','Memory Integrity and virtualization-based security will be turned off: Windows loses a protection against kernel malware.']);
  if(S.smart)notes.push(['w','SmartScreen will be turned off: downloaded programs are no longer checked.']);
+ if(S.f8&&!S.fast)notes.push(['i','With fast startup on, switching the PC off and on resumes Windows instead of starting it, so the F8 menu may not appear; it always works after Restart. Turn off fast startup in the Power tab to have it at every power-on.']);
  if(S.uac==='never')notes.push(['w','UAC is set to "Never notify": programs started by an administrator get full rights without asking.']);
  if(curLevel()==='ult')notes.push(['w','ULTIMATE removes apps and services that some features rely on (Xbox, Camera, Media Player…). Test in a virtual machine first.']);
  if(svcMode()==='game')notes.push(['w','Gaming service mode disables printing, Xbox, Remote Desktop, file sharing and more. Test in a virtual machine first.']);
